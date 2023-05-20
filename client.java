@@ -62,7 +62,7 @@ public class Client {
                 }
 
                 // 在客户端打印接收到的数据
-                System.out.println("收到服务器消息: " + serverMessage);
+                System.out.println("[聊天] " + serverMessage);
             }
 
             // 关闭连接
