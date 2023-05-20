@@ -206,7 +206,7 @@ public class Server {
                         out.println("TinyMSG server version " + ServerVersion);
                         out.println("/exit to Disconnect");
                         out.println("/version to show Server Version");
-                        out.println("/list to show online users")
+                        out.println("/list to show online users");
                     }
                     if (clientMessage.equalsIgnoreCase("/list")) {
                         sendOnlineUsers();
