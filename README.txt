@@ -1,5 +1,5 @@
 TINYMSG BY glowingstone124
-version: alpha1
+version: alpha1.1
 just clone my repo and everything is set
 TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也可以在config.json中手动更改通讯端口
 注意：你需要在client.java中手动更改端口和域名信息来匹配服务器，我会在后续更新中加入cfg
