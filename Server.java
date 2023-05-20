@@ -20,7 +20,7 @@ public class Server {
     public Server() {
         loadConfig();
         clients = new ArrayList<>();
-        ServerVersion = "Alpha 1";
+        ServerVersion = "Alpha 1.1";
     }
 
     private void loadConfig() {
@@ -173,6 +173,11 @@ public class Server {
                 username = in.readLine();
                 System.out.println("USER " + username + " Connected");
 
+                // Add the username to the list of online users
+                synchronized (onlineUsers) {
+                    onlineUsers.add(username);
+                }
+
                 // 发送服务器消息给客户端
                 out.println(srvmsg);
 
@@ -199,6 +204,10 @@ public class Server {
                         out.println("TinyMSG server version " + ServerVersion);
                         out.println("/exit to Disconnect");
                         out.println("/version to show Server Version");
+                        out.println("/list to show online users")
+                    }
+                    if (clientMessage.equalsIgnoreCase("/list")) {
+                        sendOnlineUsers();
                     }
 
                     // 将消息写入文件
@@ -210,6 +219,11 @@ public class Server {
 
                 // 关闭连接
                 clientSocket.close();
+
+                // Remove the username from the list of online users
+                synchronized (onlineUsers) {
+                    onlineUsers.remove(username);
+                }
 
                 // 从客户端处理器列表中移除当前客户端
                 clients.remove(this);
