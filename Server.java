@@ -16,11 +16,13 @@ public class Server {
     private String accessFile;
     private String srvmsg;
     private List<ClientHandler> clients;
+    private List<String> onlineUsers;
 
     public Server() {
         loadConfig();
         clients = new ArrayList<>();
         ServerVersion = "Alpha 1.1";
+        onlineUsers = new ArrayList<>();
     }
 
     private void loadConfig() {
