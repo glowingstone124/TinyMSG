@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Server {
-    private static final String CONFIG_FILE = "config.json";
+    private static final String CONFIG_FILE = "config_server.json";
+    public String ServerVersion;
 
     private int port;
     private String workingDirectory;
@@ -19,6 +20,7 @@ public class Server {
     public Server() {
         loadConfig();
         clients = new ArrayList<>();
+        ServerVersion = "Alpha 1";
     }
 
     private void loadConfig() {
@@ -42,6 +44,7 @@ public class Server {
             port = 1234;
             workingDirectory = System.getProperty("user.dir");
             accessFile = "text.txt";
+            srvmsg = "CONNECT SUCCESS";
 
             createDefaultConfig();
         }
@@ -102,7 +105,7 @@ public class Server {
             ServerSocket serverSocket = new ServerSocket(port);
 
             // 显示服务器启动消息
-            System.out.println("textserver已经启动！绑定在" + port + "端口，文件名为" + accessFile);
+            System.out.println("TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
 
             while (true) {
                 // 监听客户端的连接请求
@@ -168,7 +171,7 @@ public class Server {
 
                 // 接收客户端发送的用户名
                 username = in.readLine();
-                System.out.println("用户 " + username + " 连接成功");
+                System.out.println("USER " + username + " Connected");
 
                 // 发送服务器消息给客户端
                 out.println(srvmsg);
@@ -183,11 +186,19 @@ public class Server {
                     }
 
                     // 在服务器端打印接收到的数据
-                    System.out.println("收到客户端 " + username + " 的消息: " + clientMessage);
+                    System.out.println("Recived message from " + username + " : " + clientMessage);
 
                     if (clientMessage.equalsIgnoreCase("/exit")) {
                         // 客户端发送退出命令，断开连接
                         break;
+                    }
+                    if (clientMessage.equalsIgnoreCase("/version")) {
+                        out.println("TinyMSG server version " + ServerVersion);
+                    }
+                    if (clientMessage.equalsIgnoreCase("/help")) {
+                        out.println("TinyMSG server version " + ServerVersion);
+                        out.println("/exit to Disconnect");
+                        out.println("/version to show Server Version");
                     }
 
                     // 将消息写入文件
@@ -203,7 +214,7 @@ public class Server {
                 // 从客户端处理器列表中移除当前客户端
                 clients.remove(this);
 
-                System.out.println("用户 " + username + " 断开连接");
+                System.out.println("User " + username + " Disconnected");
             } catch (IOException e) {
                 e.printStackTrace();
             }
