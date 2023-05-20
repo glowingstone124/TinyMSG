@@ -23,6 +23,8 @@ public class Server {
         clients = new ArrayList<>();
         ServerVersion = "Alpha 1.1";
         onlineUsers = new ArrayList<>();
+        private static List<String> onlineUsers = new ArrayList<>();
+
     }
 
     private void loadConfig() {
@@ -158,6 +160,14 @@ public class Server {
         private BufferedReader in;
         private PrintWriter out;
         private String username;
+        private void sendOnlineUsers() {
+            StringBuilder userList = new StringBuilder();
+            userList.append("Online Users:\n");
+            for (String user : onlineUsers) {
+            userList.append(user).append("\n");
+            }
+            out.println(userList.toString());
+        }
 
         public ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
