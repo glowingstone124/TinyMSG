@@ -1,20 +1,93 @@
+import org.json.JSONObject;
+import org.json.JSONException;
+
 import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.io.File;
 
-public class Client {
+
+public class client {
     private String serverAddress;
     private int serverPort;
+    private static final String CONFIG_FILE = "client_cfg.json";
 
-    public Client(String serverAddress, int serverPort) {
-        this.serverAddress = serverAddress;
-        this.serverPort = serverPort;
+    public client() {
+        loadConfig();
+    }
+
+    private void loadConfig() {
+        if (!fileExists(CONFIG_FILE)) {
+            // 配置文件不存在，生成默认配置文件
+            createDefaultConfig();
+        }
+
+        // 读取配置文件
+        try {
+            String configContent = readFile(CONFIG_FILE);
+
+            if (configContent != null) {
+                JSONObject jsonConfig = new JSONObject(configContent);
+                serverAddress = jsonConfig.getString("serverAddress");
+                serverPort = jsonConfig.getInt("serverPort");
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean fileExists(String filename) {
+        File file = new File(filename);
+        return file.exists() && !file.isDirectory();
+    }
+
+    private void createDefaultConfig() {
+        try {
+            JSONObject jsonConfig = new JSONObject();
+            jsonConfig.put("serverAddress", "localhost");
+            jsonConfig.put("serverPort", 1234);
+
+            writeFile(CONFIG_FILE, jsonConfig.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String readFile(String filename) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(filename));
+            StringBuilder content = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                content.append(line);
+            }
+
+            reader.close();
+
+            return content.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private void writeFile(String filename, String content) {
+        try {
+            FileWriter writer = new FileWriter(filename);
+            writer.write(content);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void start() {
-		System.setProperty("file.encoding", "UTF-8");
         try {
             // 连接服务器
             Socket socket = new Socket(serverAddress, serverPort);
@@ -30,7 +103,7 @@ public class Client {
 
             // 从控制台读取用户输入的账户名称
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.print("请输入账户名称: ");
+            System.out.print("please input your Account name: ");
             String accountName = reader.readLine();
 
             // 向服务器发送账户名称
@@ -62,7 +135,7 @@ public class Client {
                 }
 
                 // 在客户端打印接收到的数据
-                System.out.println("[聊天] " + serverMessage);
+                System.out.println("[Chat] " + serverMessage);
             }
 
             // 关闭连接
@@ -73,10 +146,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        String serverAddress = "localhost";
-        int serverPort = 1234;
-
-        Client client = new Client(serverAddress, serverPort);
+        client client = new client();
         client.start();
     }
 }
