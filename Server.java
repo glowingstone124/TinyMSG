@@ -182,6 +182,7 @@ public class Server {
                 // 接收客户端发送的用户名
                 username = in.readLine();
                 System.out.println("USER " + username + " Connected");
+                broadcastMessage("User <" + username + "> Connected");
 
                 // 添加当前用户到在线用户列表
                 onlineUsers.add(username);
@@ -222,7 +223,7 @@ public class Server {
                     writeToFile(accessFile, clientMessage);
 
                     // 广播消息给所有连接的客户端
-                    broadcastMessage(username + ": " + clientMessage);
+                    broadcastMessage("<" + username + "> : " + clientMessage);
                 }
 
                 // 关闭连接
@@ -235,6 +236,7 @@ public class Server {
                 onlineUsers.remove(username);
 
                 System.out.println("User " + username + " Disconnected");
+                broadcastMessage("User <" + username + "> Disconnected");
             } catch (IOException e) {
                 e.printStackTrace();
             }
