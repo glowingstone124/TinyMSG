@@ -105,9 +105,12 @@ public class client {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             System.out.print("please input your Account name: ");
             String accountName = reader.readLine();
+            System.out.print("please input your password: ");
+            String accountPassword = reader.readLine();
 
             // 向服务器发送账户名称
             out.println(accountName);
+            out.println(accountPassword);
 
             // 创建线程监听用户输入
             Thread inputThread = new Thread(() -> {
@@ -131,7 +134,8 @@ public class client {
 
                 if (serverMessage == null) {
                     // 服务器已关闭连接
-                    break;
+                    System.out.println("server closed, exiting.");
+                    System.exit(0);
                 }
 
                 // 在客户端打印接收到的数据
@@ -139,7 +143,7 @@ public class client {
             }
 
             // 关闭连接
-            socket.close();
+            //socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
