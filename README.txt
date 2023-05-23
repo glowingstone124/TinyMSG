@@ -1,8 +1,7 @@
 TINYMSG BY glowingstone124
-version: alpha1.1
+version: alpha1.2
 just clone my repo and everything is set
 TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也可以在config.json中手动更改通讯端口
-注意：你需要在client.java中手动更改端口和域名信息来匹配服务器，我会在后续更新中加入cfg
 此聊天软件暂时只支持英语，后续会加入中文支持
 启动服务器：
 在windows上，确认你安装了openjdk17或者以上的java版本并且包含jre
@@ -18,8 +17,6 @@ TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也�
 
 
 TinyMSG uses port 1234 for communication. Please make sure that you have allowed port 1234 in your firewall settings. You can also manually change the communication port in the config.json file.
-
-Note: You need to manually update the port and hostname information in the Client.java file to match your server. I will add a configuration file (cfg) in future updates.
 
 This chat application currently only supports English. Chinese support will be added in the future.
 
