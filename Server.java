@@ -9,6 +9,7 @@ import java.util.List;
 
 public class Server {
     private static final String CONFIG_FILE = "config_server.json";
+    private static final String USER_PROFILE = "users.json";
     public String ServerVersion;
 
     private int port;
@@ -22,12 +23,13 @@ public class Server {
         loadConfig();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Alpha 1";
+        ServerVersion = "Alpha 1.2";
     }
 
     private void loadConfig() {
+        // Load server configuration
         if (fileExists(CONFIG_FILE)) {
-            // 如果配置文件存在，读取配置
+            // If the configuration file exists, read the configuration
             try {
                 String configContent = readFile(CONFIG_FILE);
 
@@ -42,7 +44,7 @@ public class Server {
                 e.printStackTrace();
             }
         } else {
-            // 配置文件不存在，使用默认配置并生成配置文件
+            // Configuration file doesn't exist, use default configuration and generate the configuration file
             port = 1234;
             workingDirectory = System.getProperty("user.dir");
             accessFile = "text.txt";
@@ -103,21 +105,21 @@ public class Server {
 
     public void start() {
         try {
-            // 创建ServerSocket对象，并绑定监听端口
+            // Create ServerSocket object and bind it to the listening port
             ServerSocket serverSocket = new ServerSocket(port);
 
-            // 显示服务器启动消息
+            // Display server startup message
             System.out.println("TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
 
             while (true) {
-                // 监听客户端的连接请求
+                // Listen for client connection requests
                 Socket clientSocket = serverSocket.accept();
 
-                // 创建一个新的客户端处理器线程
+                // Create a new client handler thread
                 ClientHandler clientHandler = new ClientHandler(clientSocket);
                 clients.add(clientHandler);
 
-                // 启动线程处理客户端连接
+                // Start the thread to handle the client connection
                 clientHandler.start();
             }
         } catch (IOException e) {
@@ -126,80 +128,51 @@ public class Server {
     }
 
     private void broadcastMessage(String message) {
-        // 广播消息给所有连接的客户端
+        // Broadcast the message to all connected clients
         for (ClientHandler client : clients) {
             client.sendMessage(message);
         }
-    }
-
-    private void writeToFile(String filename, String message) {
-        try {
-            FileWriter fileWriter = new FileWriter(filename, true);
-            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            PrintWriter printWriter = new PrintWriter(bufferedWriter);
-
-            printWriter.println(message);
-
-            printWriter.close();
-            bufferedWriter.close();
-            fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void sendOnlineUsersList() {
-        StringBuilder userList = new StringBuilder();
-        for (String user : onlineUsers) {
-            userList.append(user).append("\n");
-        }
-        broadcastMessage("Online Users:\n" + userList.toString());
-    }
-
-    public static void main(String[] args) {
-        Server server = new Server();
-        server.start();
     }
 
     private class ClientHandler extends Thread {
         private Socket clientSocket;
         private BufferedReader in;
         private PrintWriter out;
-        private String username;
 
-        public ClientHandler(Socket clientSocket) {
-            this.clientSocket = clientSocket;
+        public ClientHandler(Socket socket) {
+            clientSocket = socket;
         }
 
         public void run() {
-            try {
-                // 获取输入流，用于接收客户端发送的数据
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-                // 获取输出流，用于向客户端发送数据
+            try {
+
+                // Get input and output streams for the client connection
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
 
-                // 接收客户端发送的用户名
-                username = in.readLine();
-                System.out.println("USER " + username + " Connected");
-                broadcastMessage("User <" + username + "> Connected");
+                // Prompt for username
 
-                // 添加当前用户到在线用户列表
-                onlineUsers.add(username);
+                // Receive the username from the client
+                String username = in.readLine();
 
-                // 发送服务器消息给客户端
-                out.println(srvmsg);
+                // Prompt for password
+
+                // Receive the password from the client
+                String password = in.readLine();
+
+                // Verify the username and password
+                if (verifyCredentials(username, password)) {
+                    // Send server message to the client
+                    out.println(srvmsg);
+                } else {
+                    out.println("Invalid username or password. Disconnected.");
+                    return;
+                }
 
                 while (true) {
-                    // 从客户端读取数据
+                    // Receive client messages
                     String clientMessage = in.readLine();
-
-                    if (clientMessage == null) {
-                        // 客户端已关闭连接
-                        break;
-                    }
-
-                    // 在服务器端打印接收到的数据
                     System.out.println("Recived message from " + username + " : " + clientMessage);
 
                     if (clientMessage.equalsIgnoreCase("/exit")) {
@@ -213,38 +186,67 @@ public class Server {
                         out.println("TinyMSG server version " + ServerVersion);
                         out.println("/exit to Disconnect");
                         out.println("/version to show Server Version");
+                        out.println("/list to show online users");
                     }
                     if (clientMessage.equalsIgnoreCase("/list")) {
                         // 发送当前在线用户列表给客户端
                         sendOnlineUsersList();
                     }
 
-                    // 将消息写入文件
-                    writeToFile(accessFile, clientMessage);
+                    if (clientMessage == null) {
+                        // Client has disconnected
+                        break;
+                    }
 
-                    // 广播消息给所有连接的客户端
-                    broadcastMessage("<" + username + "> : " + clientMessage);
+                    // Display the received message on the server console
+                    System.out.println("[Client: " + username + "] " + clientMessage);
+
+                    // Broadcast the message to all connected clients
+                    broadcastMessage("[Client: " + username + "] " + clientMessage);
                 }
 
-                // 关闭连接
-                clientSocket.close();
-
-                // 从客户端处理器列表中移除当前客户端
+                // Client has disconnected, remove the client handler from the list
                 clients.remove(this);
 
-                // 从在线用户列表中移除当前用户
-                onlineUsers.remove(username);
-
-                System.out.println("User " + username + " Disconnected");
-                broadcastMessage("User <" + username + "> Disconnected");
+                // Close the client connection
+                clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        public void sendMessage(String message) {
-            // 向客户端发送消息
+        private void sendMessage(String message) {
+            // Send a message to the client
             out.println(message);
         }
+    }
+
+    private boolean verifyCredentials(String username, String password) {
+        try {
+            String userContent = readFile(USER_PROFILE);
+            if (userContent != null) {
+                JSONObject userProfiles = new JSONObject(userContent);
+                if (userProfiles.has(username)) {
+                    JSONObject userProfile = userProfiles.getJSONObject(username);
+                    String storedPassword = userProfile.getString("password");
+                    return password.equals(storedPassword);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static void main(String[] args) {
+        Server server = new Server();
+        server.start();
+    }
+    private void sendOnlineUsersList() {
+        StringBuilder userList = new StringBuilder();
+        for (String user : onlineUsers) {
+            userList.append(user).append("\n");
+        }
+        broadcastMessage("Online Users:\n" + userList.toString());
     }
 }
