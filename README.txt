@@ -14,7 +14,12 @@ TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也�
 执行sh start_client.sh打开客户端
 注意：在linux部分目录运行时可能需要root权限，可以在sh前加上sudo或使用root账户运行
 在客户端，使用/exit来结束服务器进程
-
+注意：users.json需要您手动创建！格式为
+{
+  "username":
+    "password": "password123",
+    "permission": 1 //edit this value to change user Permission level. 1 is Administrator and 0 is normal user.
+}
 
 TinyMSG uses port 1234 for communication. Please make sure that you have allowed port 1234 in your firewall settings. You can also manually change the communication port in the config.json file.
 
