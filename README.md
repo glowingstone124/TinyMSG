@@ -1,6 +1,7 @@
 # TINYMSG BY glowingstone124
-## version: alpha1.2
+## version: alpha1.3
 just clone my repo and everything is set
+There is something UNUSED code. May be i will rewrite them later.
 TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也可以在config.json中手动更改通讯端口
 此聊天软件暂时只支持英语，后续会加入中文支持
 启动服务器：
