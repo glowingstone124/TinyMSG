@@ -1,3 +1,4 @@
+import com.sun.javafx.css.parser.Token;
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -6,24 +7,28 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 
 public class Server {
     private static final String CONFIG_FILE = "config_server.json";
     private static final String USER_PROFILE = "users.json";
     public String ServerVersion;
-
     private int port;
     private String workingDirectory;
     private String accessFile;
     private String srvmsg;
     private List<ClientHandler> clients;
     private List<String> onlineUsers;
+    private String accesstoken;
+    private String unverifytoken;
+    long Timestamp = System.currentTimeMillis();
 
     public Server() {
         loadConfig();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Alpha 1.2";
+        ServerVersion = "Alpha 1.3";
     }
 
     private void loadConfig() {
@@ -39,6 +44,7 @@ public class Server {
                     workingDirectory = jsonConfig.getString("workingDirectory");
                     accessFile = jsonConfig.getString("accessFile");
                     srvmsg = jsonConfig.getString("srvmsg");
+                    accesstoken = jsonConfig.getString("token");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -49,6 +55,7 @@ public class Server {
             workingDirectory = System.getProperty("user.dir");
             accessFile = "text.txt";
             srvmsg = "CONNECT SUCCESS";
+            accesstoken = TokenGenerate();
 
             createDefaultConfig();
         }
@@ -106,11 +113,11 @@ public class Server {
     public void start() {
         try {
             // Create ServerSocket object and bind it to the listening port
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             ServerSocket serverSocket = new ServerSocket(port);
 
             // Display server startup message
             System.out.println("TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
-
             while (true) {
                 // Listen for client connection requests
                 Socket clientSocket = serverSocket.accept();
@@ -138,15 +145,31 @@ public class Server {
         private Socket clientSocket;
         private BufferedReader in;
         private PrintWriter out;
+        private String username;
 
         public ClientHandler(Socket socket) {
             clientSocket = socket;
+
         }
 
-        public void run() {
+        private void disconnectClient() {
+            broadcastMessage("user " + username + " disconnected.");
+            System.out.println("user " + username + " disconnected.");
+            clients.remove(this);
+            onlineUsers.remove(username);
 
             try {
+                if (clientSocket != null && !clientSocket.isClosed()) {
+                    clientSocket.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
+
+        public void run() {
+            try {
                 // Get input and output streams for the client connection
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -154,29 +177,43 @@ public class Server {
                 // Prompt for username
 
                 // Receive the username from the client
-                String username = in.readLine();
+                username = in.readLine();
 
                 // Prompt for password
 
                 // Receive the password from the client
                 String password = in.readLine();
+                unverifytoken = in.readLine();
+                if (Objects.equals(unverifytoken, accesstoken)) {
+                    if (verifyCredentials(username, password)) {
+                        // Check if the user is already online
+                        if (isUserOnline(username)) {
+                            out.println("User is already logged in. Disconnected.");
+                            return;
+                        }
 
-                // Verify the username and password
-                if (verifyCredentials(username, password)) {
-                    // Send server message to the client
-                    out.println(srvmsg);
+                        // Add the user to the online users list
+                        onlineUsers.add(username);
+
+                        // Send server message to the client
+                        out.println(srvmsg);
+                    } else {
+                        out.println("Invalid username or password. Disconnected.");
+                        disconnectClient();
+                        return;
+                    }
                 } else {
-                    out.println("Invalid username or password. Disconnected.");
-                    return;
+                    out.println("Wrong token! If you believe this is an error, please contact with your server administrator.");
+                    System.out.println("user " + username + " disconnected. reason: wrong token");
                 }
+                // Verify the username and password
 
                 while (true) {
                     // Receive client messages
                     String clientMessage = in.readLine();
-                    System.out.println("Recived message from " + username + " : " + clientMessage);
 
                     if (clientMessage.equalsIgnoreCase("/exit")) {
-                        // 客户端发送退出命令，断开连接
+                        // Client sent the exit command, disconnect
                         break;
                     }
                     if (clientMessage.equalsIgnoreCase("/version")) {
@@ -189,8 +226,17 @@ public class Server {
                         out.println("/list to show online users");
                     }
                     if (clientMessage.equalsIgnoreCase("/list")) {
-                        // 发送当前在线用户列表给客户端
+                        // Send the current online user list to the client
                         sendOnlineUsersList();
+                    }
+                    if (clientMessage.equalsIgnoreCase("/permission")) {
+                        // Send the user's permission level to the client
+                        String permissionLevel = showPermission(username);
+                        out.println("Your permission level: " + permissionLevel);
+                    }
+                    if (clientMessage.equalsIgnoreCase("/token")) {
+                        broadcastMessage("server token is " + accesstoken);
+
                     }
 
                     if (clientMessage == null) {
@@ -199,20 +245,23 @@ public class Server {
                     }
 
                     // Display the received message on the server console
-                    System.out.println("[Client: " + username + "] " + clientMessage);
+                    System.out.println("[Client:" + username + "] " + clientMessage);
 
                     // Broadcast the message to all connected clients
-                    broadcastMessage("[Client: " + username + "] " + clientMessage);
+                    broadcastMessage("[Client:" + username + "] " + clientMessage);
                 }
 
-                // Client has disconnected, remove the client handler from the list
+                // Client has disconnected, remove the client handler from the list and the user from online users
                 clients.remove(this);
+                onlineUsers.remove(username);
 
                 // Close the client connection
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                disconnectClient();
             }
+
         }
 
         private void sendMessage(String message) {
@@ -238,15 +287,59 @@ public class Server {
         return false;
     }
 
-    public static void main(String[] args) {
-        Server server = new Server();
-        server.start();
+    private String showPermission(String username) {
+        try {
+            String userContent = readFile(USER_PROFILE);
+            if (userContent != null) {
+                JSONObject userProfiles = new JSONObject(userContent);
+                if (userProfiles.has(username)) {
+                    JSONObject userProfile = userProfiles.getJSONObject(username);
+                    int userPermissionLevel = userProfile.getInt("permission");
+                    if (userPermissionLevel == 1) {
+                        String userPermissionReturn = "admin";
+                        return String.valueOf(userPermissionReturn);
+                    }
+                    if (userPermissionLevel == 0) {
+                        String userPermissionReturn = "user";
+                        return String.valueOf(userPermissionReturn);
+                    } else {
+                        broadcastMessage("Illegal Argument: Permission in user:" + username);
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return username;
     }
+
+    private boolean isUserOnline(String username) {
+        return onlineUsers.contains(username);
+    }
+
     private void sendOnlineUsersList() {
         StringBuilder userList = new StringBuilder();
         for (String user : onlineUsers) {
             userList.append(user).append("\n");
         }
         broadcastMessage("Online Users:\n" + userList.toString());
+    }
+
+    public static void main(String[] args) {
+        Server server = new Server();
+        server.start();
+    }
+    private String TokenGenerate() {
+        int length = 256;
+        String str="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random=new Random();
+        StringBuffer sb=new StringBuffer();
+        for(int i=0;i<length;i++){
+            int number=random.nextInt(62);
+            sb.append(str.charAt(number));
+        }
+        broadcastMessage(sb.toString());
+        String token = sb.toString();
+        return sb.toString();
     }
 }
