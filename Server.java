@@ -117,7 +117,7 @@ public class Server {
             ServerSocket serverSocket = new ServerSocket(port);
 
             // Display server startup message
-            System.out.println("TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
+            System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
             while (true) {
                 // Listen for client connection requests
                 Socket clientSocket = serverSocket.accept();
@@ -153,8 +153,8 @@ public class Server {
         }
 
         private void disconnectClient() {
-            broadcastMessage("user " + username + " disconnected.");
-            System.out.println("user " + username + " disconnected.");
+            broadcastMessage("[server] user " + username + " disconnected.");
+            System.out.println("[server] user " + username + " disconnected.");
             clients.remove(this);
             onlineUsers.remove(username);
 
@@ -188,7 +188,7 @@ public class Server {
                     if (verifyCredentials(username, password)) {
                         // Check if the user is already online
                         if (isUserOnline(username)) {
-                            out.println("User is already logged in. Disconnected.");
+                            out.println("[ERROR] User is already logged in. Disconnected.");
                             return;
                         }
 
@@ -198,13 +198,13 @@ public class Server {
                         // Send server message to the client
                         out.println(srvmsg);
                     } else {
-                        out.println("Invalid username or password. Disconnected.");
+                        out.println("[ERROR] Invalid username or password. Disconnected.");
                         disconnectClient();
                         return;
                     }
                 } else {
-                    out.println("Wrong token! If you believe this is an error, please contact with your server administrator.");
-                    System.out.println("user " + username + " disconnected. reason: wrong token");
+                    out.println("[ERROR] Wrong token! If you believe this is an error, please contact with your server administrator.");
+                    System.out.println("[server] user " + username + " disconnected. reason: wrong token");
                 }
                 // Verify the username and password
 
@@ -212,31 +212,32 @@ public class Server {
                     // Receive client messages
                     String clientMessage = in.readLine();
 
-                    if (clientMessage.equalsIgnoreCase("/exit")) {
-                        // Client sent the exit command, disconnect
-                        break;
-                    }
                     if (clientMessage.equalsIgnoreCase("/version")) {
-                        out.println("TinyMSG server version " + ServerVersion);
+                        out.println("[server] TinyMSG server version " + ServerVersion);
+                        clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/help")) {
-                        out.println("TinyMSG server version " + ServerVersion);
-                        out.println("/exit to Disconnect");
-                        out.println("/version to show Server Version");
-                        out.println("/list to show online users");
+                        out.println("[server] TinyMSG server version " + ServerVersion);
+                        out.println("[server] /exit to Disconnect");
+                        out.println("[server] /version to show Server Version");
+                        out.println("[server] /list to show online users");
+                        out.println("[server] /permission to show your permission level");
+                        clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/list")) {
                         // Send the current online user list to the client
                         sendOnlineUsersList();
+                        clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/permission")) {
                         // Send the user's permission level to the client
                         String permissionLevel = showPermission(username);
-                        out.println("Your permission level: " + permissionLevel);
+                        out.println("[server] Your permission level: " + permissionLevel);
+                        clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/token")) {
-                        broadcastMessage("server token is " + accesstoken);
-
+                        broadcastMessage("[server] server token is " + accesstoken);
+                        clientMessage = "";
                     }
 
                     if (clientMessage == null) {
@@ -244,11 +245,14 @@ public class Server {
                         break;
                     }
 
-                    // Display the received message on the server console
-                    System.out.println("[Client:" + username + "] " + clientMessage);
+                    if (clientMessage != null && !clientMessage.isEmpty()) {
+                        // Display the received message on the server console
+                        System.out.println("[Client:" + username + "] " + clientMessage);
 
-                    // Broadcast the message to all connected clients
-                    broadcastMessage("[Client:" + username + "] " + clientMessage);
+                        // Broadcast the message to all connected clients
+                        broadcastMessage("[Client:" + username + "] " + clientMessage);
+                    }
+
                 }
 
                 // Client has disconnected, remove the client handler from the list and the user from online users
@@ -303,7 +307,7 @@ public class Server {
                         String userPermissionReturn = "user";
                         return String.valueOf(userPermissionReturn);
                     } else {
-                        broadcastMessage("Illegal Argument: Permission in user:" + username);
+                        broadcastMessage("[ERROR] Illegal Argument: Permission in user:" + username);
                     }
                 }
             }
@@ -322,7 +326,7 @@ public class Server {
         for (String user : onlineUsers) {
             userList.append(user).append("\n");
         }
-        broadcastMessage("Online Users:\n" + userList.toString());
+        broadcastMessage("[server] Online Users:\n" + userList.toString());
     }
 
     public static void main(String[] args) {
