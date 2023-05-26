@@ -1,10 +1,10 @@
-TINYMSG BY glowingstone124
-version: alpha1.2
+# TINYMSG BY glowingstone124
+## version: alpha1.2
 just clone my repo and everything is set
 TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也可以在config.json中手动更改通讯端口
 此聊天软件暂时只支持英语，后续会加入中文支持
 启动服务器：
-在windows上，确认你安装了openjdk17或者以上的java版本并且包含jre
+在windows上，确认你安装了**openjdk17**或者以上的java版本并且包含jre
 执行start_server.bat打开服务端
 执行start_client.bat打开客户端
 在linux上，确认你安装了openjdk17或者以上的java版本并且包含jre
@@ -15,11 +15,13 @@ TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也�
 注意：在linux部分目录运行时可能需要root权限，可以在sh前加上sudo或使用root账户运行
 在客户端，使用/exit来结束服务器进程
 注意：users.json需要您手动创建！格式为
+```
 {
   "username":
     "password": "password123",
     "permission": 1 //edit this value to change user Permission level. 1 is Administrator and 0 is normal user.
 }
+```
 
 TinyMSG uses port 1234 for communication. Please make sure that you have allowed port 1234 in your firewall settings. You can also manually change the communication port in the config.json file.
 
