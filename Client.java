@@ -108,14 +108,14 @@ public class Client{
             if (token == "Your custom token here") {
                 System.out.println("Please edit client_cfg.json to configure your own token. You can not connect to a server without a token. Make sure that your token is same with the server.");
             }
-            System.out.println("you are now connecting to " + serverAddress + " port " + serverPort);
+            System.out.println("[client] you are now connecting to " + serverAddress + " port " + serverPort);
 
             // 从控制台读取用户输入的账户名称
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.print("please input your Account name: ");
+            System.out.print("[client] please input your Account name: ");
             String accountName = reader.readLine();
             out.println(accountName);
-            System.out.print("please input your password: ");
+            System.out.print("[client] please input your password: ");
             String accountPassword = reader.readLine();
 
             // 向服务器发送账户名称
@@ -148,7 +148,7 @@ public class Client{
                 }
 
                 // 在客户端打印接收到的数据
-                System.out.println("[Chat] " + serverMessage);
+                System.out.println(serverMessage);
             }
 
             // 关闭连接
