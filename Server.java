@@ -1,4 +1,3 @@
-import com.sun.javafx.css.parser.Token;
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -135,26 +134,34 @@ public class Server {
     }
 
     private void broadcastMessage(String message) {
+        broadcastMessage(message,"ALL");
+    }
+    private void broadcastMessage(String message, String specify) {
         // Broadcast the message to all connected clients
-        for (ClientHandler client : clients) {
-            client.sendMessage(message);
-        }
+            for (ClientHandler client : clients) {
+                if (specify.contentEquals("ALL") || specify.contentEquals(client.username)) client.sendMessage(message);
+            }
     }
 
     private class ClientHandler extends Thread {
         private Socket clientSocket;
         private BufferedReader in;
         private PrintWriter out;
-        private String username;
-
+        public String username;
+        @SuppressWarnings("Unused")
+        private boolean isSender(ClientHandler sender) {
+            return this == sender;
+        }
         public ClientHandler(Socket socket) {
             clientSocket = socket;
 
         }
 
-        private void disconnectClient() {
-            broadcastMessage("[server] user " + username + " disconnected.");
-            System.out.println("[server] user " + username + " disconnected.");
+        private void disconnectClient(boolean doBroadcast) {
+            if(doBroadcast) {
+                broadcastMessage("[server] user " + username + " disconnected.");
+                System.out.println("[server] user " + username + " disconnected.");
+            }
             clients.remove(this);
             onlineUsers.remove(username);
 
@@ -199,7 +206,7 @@ public class Server {
                         out.println(srvmsg);
                     } else {
                         out.println("[ERROR] Invalid username or password. Disconnected.");
-                        disconnectClient();
+                        disconnectClient(true);
                         return;
                     }
                 } else {
@@ -222,6 +229,7 @@ public class Server {
                         out.println("[server] /version to show Server Version");
                         out.println("[server] /list to show online users");
                         out.println("[server] /permission to show your permission level");
+                        out.println("[server] /stop to stop the server");
                         clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/list")) {
@@ -239,6 +247,19 @@ public class Server {
                         broadcastMessage("[server] server token is " + accesstoken);
                         clientMessage = "";
                     }
+                    if (clientMessage.equalsIgnoreCase("/exit")) {
+                       disconnectClient(true);
+                       clientMessage = "";
+                    }
+                    if (clientMessage.equalsIgnoreCase("/stop")) {
+                        if(isAdmin(username)) {
+
+                            System.exit(0);
+                        } else {
+                            broadcastMessage("You don't have permission to DO THAT!",username);
+                            clientMessage = "";
+                        }
+                    }
 
                     if (clientMessage == null) {
                         // Client has disconnected
@@ -255,17 +276,31 @@ public class Server {
 
                 }
 
-                // Client has disconnected, remove the client handler from the list and the user from online users
-                clients.remove(this);
-                onlineUsers.remove(username);
-
-                // Close the client connection
-                clientSocket.close();
+                disconnectClient(false);
             } catch (IOException e) {
                 e.printStackTrace();
-                disconnectClient();
+                disconnectClient(true);
             }
 
+        }
+
+        private boolean isAdmin(String username) {
+            try {
+                String userContent = readFile(USER_PROFILE);
+                if (userContent != null) {
+                    JSONObject userProfiles = new JSONObject(userContent);
+                    if (userProfiles.has(username)) {
+                        JSONObject userProfile = userProfiles.getJSONObject(username);
+                        int permissionlvl = userProfile.getInt("permission");
+                        if (Objects.equals(permissionlvl, 1)) {
+                            return true;
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        return false;
         }
 
         private void sendMessage(String message) {
@@ -306,6 +341,10 @@ public class Server {
                     if (userPermissionLevel == 0) {
                         String userPermissionReturn = "user";
                         return String.valueOf(userPermissionReturn);
+                    }
+                    if (userPermissionLevel == 2) {
+                        String userPermissionReturn = "System";
+                        return String.valueOf(userPermissionReturn);
                     } else {
                         broadcastMessage("[ERROR] Illegal Argument: Permission in user:" + username);
                     }
@@ -324,9 +363,9 @@ public class Server {
     private void sendOnlineUsersList() {
         StringBuilder userList = new StringBuilder();
         for (String user : onlineUsers) {
-            userList.append(user).append("\n");
+            userList.append("\n").append(user);
         }
-        broadcastMessage("[server] Online Users:\n" + userList.toString());
+        broadcastMessage("[server] Online Users:" + userList);
     }
 
     public static void main(String[] args) {
@@ -346,4 +385,5 @@ public class Server {
         String token = sb.toString();
         return sb.toString();
     }
+
 }
