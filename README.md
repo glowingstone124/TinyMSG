@@ -12,7 +12,7 @@ If you occured an error in using this app, send me a issue.
 
 At first, you need a Java Runtime Environment which verison over **17**.
 
-Then use java Server.jar to start server on PORT 1234.
+Then use java -jar Server.jar to start server on PORT 1234.
 
 then Server will automatically generate a config file called "config_server.json"
 
@@ -24,7 +24,7 @@ here is a sample of server config.
 
 ### Client
 
-use java Client.jar to start a client.
+use java -jar Client.jar to start a client.
 
 Client will automatically generate a config file called "client_cfg.json"
 
@@ -35,4 +35,4 @@ here is a sample of client config.
 ```
 then connect to your server by the prompt.
 
-**YOU SHOULD MAKE SURE THAT SERVERSIDE TOKEN AS SAME AS THE CLIENTSIDE**
+**YOU SHOULD MAKE SURE THAT SERVERSIDE TOKEN IS SAME TO THE CLIENTSIDE**
