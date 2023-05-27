@@ -1,55 +1,38 @@
 # TINYMSG BY glowingstone124
-## version: alpha1.3
-just clone my repo and everything is set
+## version: alpha1.3 Release 1.0
+Download Executable Files in Releases.
 
-There is something UNUSED code. May be i will rewrite them later.
+Source Code is in the repo. 
 
-TinyMSG使用1234端口进行通信，请确认您放行了1234端口，您也可以在config.json中手动更改通讯端口
+If you occured an error in using this app, send me a issue.
 
-此聊天软件暂时只支持英语，后续会加入中文支持
+## How to use this application?
 
-启动服务器：
+### Server
 
-在windows上，确认你安装了**openjdk17**或者以上的java版本并且包含jre
+At first, you need a Java Runtime Environment which verison over **17**.
 
-执行start_server.bat打开服务端
+Then use java Server.jar to start server on PORT 1234.
 
-执行start_client.bat打开客户端
+then Server will automatically generate a config file called "config_server.json"
 
-在linux上，确认你安装了openjdk17或者以上的java版本并且包含jre
+here is a sample of server config.
 
-执行sh start_server.sh打开服务端
-
-注意：在文件中注释了sudo ufw allow 1234/tcp
-
-如果您不确定您的服务器是否开放1234端口，请取消此注释并运行start_server.sh，一般情况下ufw会放行1234端口
-
-执行sh start_client.sh打开客户端
-
-注意：在linux部分目录运行时可能需要root权限，可以在sh前加上sudo或使用root账户运行
-
-在客户端，使用/exit来结束服务器进程
-
-注意：users.json需要您手动创建！格式为
 ```
-{
-  "username":
-    "password": "password123",
-    "permission": 1 //edit this value to change user Permission level. 1 is Administrator and 0 is normal user.
-}
+{"srvmsg":"CONNECT SUCCESS","port":1234,"workingDirectory":"this/is/your/work/dictionary","accessFile":"text.txt","token":"this will automatically generate"}
 ```
 
-TinyMSG uses port 1234 for communication. Please make sure that you have allowed port 1234 in your firewall settings. You can also manually change the communication port in the config.json file.
+### Client
 
-This chat application currently only supports English. Chinese support will be added in the future.
+use java Client.jar to start a client.
 
-To start the server:
-On Windows, make sure you have installed OpenJDK 17 or a higher version of Java that includes JRE. Execute start_server.bat to open the server. Execute start_client.bat to open the client.
+Client will automatically generate a config file called "client_cfg.json"
 
-On Linux, make sure you have installed OpenJDK 17 or a higher version of Java that includes JRE. Execute sh start_server.sh to open the server.
-Note: In the file, the command sudo ufw allow 1234/tcp is commented out. If you are unsure whether port 1234 is open on your server, uncomment this line and run start_server.sh. In most cases, ufw will allow port 1234.
+here is a sample of client config.
 
-Execute sh start_client.sh to open the client.
-Note: Running in certain directories on Linux may require root privileges. You can prefix sudo before sh or run it with the root account.
+```
+{"serverAddress":"localhost","serverPort":1234,"token":"Your custom token here"}
+```
+then connect to your server by the prompt.
 
-On the client side, use /exit to terminate the server process.
+**YOU SHOULD MAKE SURE THAT SERVERSIDE TOKEN AS SAME AS THE CLIENTSIDE**
