@@ -12,22 +12,18 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.io.IOException;
 public class Server {
     private ExecutorService executorService;
-    /*
-    / We now defined 2 files. config_server.json and users.json
-    / config_server.json is to configure the server's open port and messages, etc.
-    / users.json Contains ALL user's username, password and permission.
-    */
     private static final String CONFIG_FILE = "config_server.json";
     private static final String USER_PROFILE = "users.json";
     public String ServerVersion;
     private int port;
-    private String workingDirectory;
+    public String workingDirectory;
     private String accessFile;
     private String srvmsg;
-    private List<ClientHandler> clients;
-    private List<String> onlineUsers;
+    public final List<ClientHandler> clients;
+    public final List<String> onlineUsers;
     private String accesstoken;
     private String unverifytoken;
     long Timestamp = System.currentTimeMillis();
@@ -119,7 +115,8 @@ public class Server {
             writer.write(content);
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.log(String.valueOf(e));
+            log("An error reported. Please check at errors.log", 2);
         }
     }
     public void log(String input, int level) {
@@ -136,23 +133,18 @@ public class Server {
     }
 
     public void start() {
+        if (port < 1 || port > 65535) {
+            log("specified port " + port + " is invalid", 1);
+        }
         try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             // Create ServerSocket object and bind it to the listening port
             /* check if port is useable
             / In common use, port 1234 is enough.
             / If your server doesn't have port 1234 or you don't want to open port 1234,
             / Edit Configration files to Change the port.
             */
-            if (port < 1 || port > 65535 ||) {
-                log("specified port is invalid. automatically use port 1234.", 1);
-                port = 1234;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-                ServerSocket serverSocket = new ServerSocket(port);
-            } else {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-                ServerSocket serverSocket = new ServerSocket(port);
-            }
-
+            ServerSocket serverSocket = new ServerSocket(port);
             new Thread(new ConsoleCommandHandler(this)).start();
             // Display server startup message
             System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
@@ -175,7 +167,8 @@ public class Server {
                 executorService.execute(clientHandler);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.log(String.valueOf(e));
+            log("An error reported. Please check at errors.log", 2);
         }
     }
 
@@ -216,7 +209,8 @@ public class Server {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Logger.log(String.valueOf(e));
+                log("client error", 1);
             }
         }
 
@@ -381,9 +375,6 @@ public class Server {
                 if (userProfiles.has(username)) {
                     JSONObject userProfile = userProfiles.getJSONObject(username);
                     int userPermissionLevel = userProfile.getInt("permission");
-                    // commonly, there are only permission 1 and 0. permission 2 is for bots, server notices, etc...
-                    // I haven't write functions about permission System. Maybe I will write later...
-                    // Some commands are administrator only. Check out more things at LINE 269.
                     if (userPermissionLevel == 1) {
                         String userPermissionReturn = "admin";
                         return String.valueOf(userPermissionReturn);
@@ -466,4 +457,60 @@ public class Server {
         }
         return false;
     }
+    public boolean addAdmin(String username, String password) {
+        try {
+            String userContent = readFile(USER_PROFILE);
+            JSONObject userProfiles;
+            if (userContent != null) {
+                userProfiles = new JSONObject(userContent);
+            } else {
+                userProfiles = new JSONObject();
+            }
+
+            if (userProfiles.has(username)) {
+                log("[ERROR] User already exists.", 1);
+                return false;
+            }
+
+            JSONObject newUserProfile = new JSONObject();
+            newUserProfile.put("password", password);
+            newUserProfile.put("permission", 1); // 设置默认权限为0
+
+            userProfiles.put(username, newUserProfile);
+
+            writeFile(USER_PROFILE, userProfiles.toString()); // 将更新后的JSON写回到文件中
+            System.out.println("[server] User " + username + " added with Admin permission.");
+            return true;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public boolean delUser(String username) {
+        try {
+            String userContent = readFile(USER_PROFILE);
+            JSONObject userProfiles;
+            if (userContent != null) {
+                userProfiles = new JSONObject(userContent);
+            } else {
+                log("[ERROR] User profile file not found.", 2);
+                return false;
+            }
+
+            if (userProfiles.has(username)) {
+                userProfiles.remove(username);
+                writeFile(USER_PROFILE, userProfiles.toString()); // 保存更新后的用户配置文件
+                log("[server] User " + username + " deleted.", 0);
+                return true;
+            } else {
+                log("[ERROR] User not found.", 1);
+                return false;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
 }
