@@ -133,8 +133,13 @@ public class Server {
     public void start() {
         try {
             // Create ServerSocket object and bind it to the listening port
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            ServerSocket serverSocket = new ServerSocket(port);
+            if (port < 1 || port > 65535 ||) {
+                log("specified port is invalid. automatically use port 1234.", 1);
+                port = 1234;
+            } else {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                ServerSocket serverSocket = new ServerSocket(port);
+            }
 
             new Thread(new ConsoleCommandHandler(this)).start();
             // Display server startup message
