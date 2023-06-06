@@ -5,7 +5,7 @@ import java.io.IOException;
 public class Logger{
     private static Server server;
     public static void log(String Text){
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(server.workingDirectory, true))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(errors.log, true))) {
             writer.write(Text);
             writer.newLine();
         } catch (IOException e) {
