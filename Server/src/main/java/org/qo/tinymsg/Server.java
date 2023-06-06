@@ -14,6 +14,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 public class Server {
     private ExecutorService executorService;
+    /*
+    / We now defined 2 files. config_server.json and users.json
+    / config_server.json is to configure the server's open port and messages, etc.
+    / users.json Contains ALL user's username, password and permission.
+    */
     private static final String CONFIG_FILE = "config_server.json";
     private static final String USER_PROFILE = "users.json";
     public String ServerVersion;
@@ -133,6 +138,11 @@ public class Server {
     public void start() {
         try {
             // Create ServerSocket object and bind it to the listening port
+            /* check if port is useable
+            / In common use, port 1234 is enough.
+            / If your server doesn't have port 1234 or you don't want to open port 1234,
+            / Edit Configration files to Change the port.
+            */
             if (port < 1 || port > 65535 ||) {
                 log("specified port is invalid. automatically use port 1234.", 1);
                 port = 1234;
@@ -371,6 +381,9 @@ public class Server {
                 if (userProfiles.has(username)) {
                     JSONObject userProfile = userProfiles.getJSONObject(username);
                     int userPermissionLevel = userProfile.getInt("permission");
+                    // commonly, there are only permission 1 and 0. permission 2 is for bots, server notices, etc...
+                    // I haven't write functions about permission System. Maybe I will write later...
+                    // Some commands are administrator only. Check out more things at LINE 269.
                     if (userPermissionLevel == 1) {
                         String userPermissionReturn = "admin";
                         return String.valueOf(userPermissionReturn);
@@ -453,5 +466,4 @@ public class Server {
         }
         return false;
     }
-
 }
