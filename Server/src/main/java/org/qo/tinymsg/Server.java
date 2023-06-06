@@ -136,6 +136,8 @@ public class Server {
             if (port < 1 || port > 65535 ||) {
                 log("specified port is invalid. automatically use port 1234.", 1);
                 port = 1234;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                ServerSocket serverSocket = new ServerSocket(port);
             } else {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
                 ServerSocket serverSocket = new ServerSocket(port);
