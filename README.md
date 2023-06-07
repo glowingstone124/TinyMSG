@@ -1,5 +1,5 @@
 # TINYMSG BY glowingstone124
-## version: alpha1.3 Release 1.0
+## Release 1.1.1
 Download Executable Files in Releases.
 
 Source Code is in the repo. 
