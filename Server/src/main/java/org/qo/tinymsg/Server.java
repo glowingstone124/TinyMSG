@@ -1,8 +1,9 @@
 package org.qo.tinymsg;
-import org.json.JSONObject;
-import org.json.JSONException;
 
-import java.awt.*;
+import com.google.protobuf.Api;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -12,28 +13,30 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.io.IOException;
 public class Server {
-    private ExecutorService executorService;
-    private static final String CONFIG_FILE = "config_server.json";
-    private static final String USER_PROFILE = "users.json";
-    public String ServerVersion;
-    private int port;
+    private final ExecutorService executorService;
+    public static final String CONFIG_FILE = "config_server.json";
+    public static final String USER_PROFILE = "users.json";
+    public static final String LOG_FILE = "logs.log";
+    public static String ServerVersion;
+    public int port;
     public String workingDirectory;
     private String accessFile;
     private String srvmsg;
     public final List<ClientHandler> clients;
     public final List<String> onlineUsers;
     private String accesstoken;
-    private String unverifytoken;
-    long Timestamp = System.currentTimeMillis();
+    public final List<String> onlineApi;
+    public boolean NOPIC;
+    public boolean NOTOKEN;
 
 
     public Server() {
         loadConfig();
+        onlineApi = new ArrayList<>();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Release 1.1";
+        ServerVersion = "Release 1.2";
         executorService = Executors.newFixedThreadPool(10);
     }
 
@@ -43,7 +46,7 @@ public class Server {
 
     private void loadConfig() {
         // Load server configuration
-        if (fileExists(CONFIG_FILE)) {
+        if (fileExists()) {
             // If the configuration file exists, read the configuration
             try {
                 String configContent = readFile(CONFIG_FILE);
@@ -55,6 +58,8 @@ public class Server {
                     accessFile = jsonConfig.getString("accessFile");
                     srvmsg = jsonConfig.getString("srvmsg");
                     accesstoken = jsonConfig.getString("token");
+                    NOTOKEN = jsonConfig.getBoolean("NOTOKEN");
+                    NOPIC = jsonConfig.getBoolean("NOPIC");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -69,8 +74,8 @@ public class Server {
         }
     }
 
-    private boolean fileExists(String filename) {
-        File file = new File(filename);
+    private boolean fileExists() {
+        File file = new File(Server.CONFIG_FILE);
         return file.exists() && !file.isDirectory();
     }
 
@@ -82,6 +87,8 @@ public class Server {
             jsonConfig.put("accessFile", accessFile);
             jsonConfig.put("srvmsg", srvmsg);
             jsonConfig.put("token", TokenGenerate());
+            jsonConfig.put("NOPIC", NOPIC);
+            jsonConfig.put("NOTOKEN", NOTOKEN);
 
             writeFile(CONFIG_FILE, jsonConfig.toString());
         } catch (JSONException e) {
@@ -89,7 +96,7 @@ public class Server {
         }
     }
 
-    private String readFile(String filename) {
+    public String readFile(String filename) {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(filename));
             StringBuilder content = new StringBuilder();
@@ -115,8 +122,7 @@ public class Server {
             writer.write(content);
             writer.close();
         } catch (IOException e) {
-            Logger.log(String.valueOf(e));
-            log("An error reported. Please check at errors.log", 2);
+            e.printStackTrace();
         }
     }
     public void log(String input, int level) {
@@ -129,22 +135,18 @@ public class Server {
         } else if (level == 2) {
             System.out.println(ColorfulText.RED + input + ColorfulText.RESET);
             //log level: ERROR
+        } else {
+            log("Your specfied log level is invalid. Please refactor your code.", 2);
         }
     }
 
     public void start() {
-        if (port < 1 || port > 65535) {
-            log("specified port " + port + " is invalid", 1);
-        }
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            Logger.startup();
             // Create ServerSocket object and bind it to the listening port
-            /* check if port is useable
-            / In common use, port 1234 is enough.
-            / If your server doesn't have port 1234 or you don't want to open port 1234,
-            / Edit Configration files to Change the port.
-            */
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             ServerSocket serverSocket = new ServerSocket(port);
+
             new Thread(new ConsoleCommandHandler(this)).start();
             // Display server startup message
             System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
@@ -152,6 +154,7 @@ public class Server {
             if (os.equals("Linux")) {
                 log("You are now running TinyMSG on Operating System based on Linux. To enable ALL features of TinyMSG, please run it under SUDO mode.", 0);
             } else {
+                log("Your Operating System is: " + os, 0);
                 log("Your are now running TinyMSG on Windows or MacOS(anyway) please ensure that you gave TinyMSG complete permission to Read and Write files.", 0);
             }
 
@@ -167,12 +170,11 @@ public class Server {
                 executorService.execute(clientHandler);
             }
         } catch (IOException e) {
-            Logger.log(String.valueOf(e));
-            log("An error reported. Please check at errors.log", 2);
+            e.printStackTrace();
         }
     }
 
-    private void broadcastMessage(String message) {
+    public void broadcastMessage(String message) {
         if (clients != null) {
             broadcastMessage(message, "ALL");
         }
@@ -186,8 +188,7 @@ public class Server {
     }
 
     private class ClientHandler extends Thread {
-        private Socket clientSocket;
-        private BufferedReader in;
+        private final Socket clientSocket;
         private PrintWriter out;
         public String username;
 
@@ -209,8 +210,7 @@ public class Server {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                Logger.log(String.valueOf(e));
-                log("client error", 1);
+                e.printStackTrace();
             }
         }
 
@@ -218,19 +218,18 @@ public class Server {
         public void run() {
             try {
                 // Get input and output streams for the client connection
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 // Prompt for username
 
                 // Receive the username from the client
                 username = in.readLine();
-
                 // Prompt for password
 
                 // Receive the password from the client
                 String password = in.readLine();
-                unverifytoken = in.readLine();
+                String unverifytoken = in.readLine();
                 if (Objects.equals(unverifytoken, accesstoken)) {
                     if (verifyCredentials(username, password)) {
                         // Check if the user is already online
@@ -238,15 +237,21 @@ public class Server {
                             out.println("[ERROR] User is already logged in. Disconnected.");
                             return;
                         }
+                        if (ApiControl.isServer(username)) {
+                            onlineApi.add(username);
+                            out.println("SUCCESS CONNECTED TO SERVER");
+                            log("Api " + username + " connected.", 1);
+                        } else {
+                            onlineUsers.add(username);
+                            out.println(srvmsg);
+                            // Add the user to the online users list
+                        }
 
-                        // Add the user to the online users list
-                        onlineUsers.add(username);
 
                         // Send server message to the client
-                        out.println(srvmsg);
                     } else {
                         out.println("[ERROR] Invalid username or password. Disconnected.");
-                        disconnectClient(true);
+                        disconnectClient(false);
                         return;
                     }
                 } else {
@@ -285,8 +290,12 @@ public class Server {
                         clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/token")) {
-                        broadcastMessage("[server] server token is " + accesstoken);
-                        clientMessage = "";
+                        if (NOTOKEN) {
+                            log("this server isn't opened token verify. please enable it in server config.", 1);
+                        }else {
+                            broadcastMessage("[server] server token is " + accesstoken);
+                            clientMessage = "";
+                        }
                     }
                     if (clientMessage.equalsIgnoreCase("/exit")) {
                         disconnectClient(true);
@@ -308,11 +317,15 @@ public class Server {
                     }
 
                     if (clientMessage != null && !clientMessage.isEmpty()) {
-                        // Display the received message on the server console
-                        System.out.println("[Client:" + username + "] " + clientMessage);
+                        if (onlineApi.contains(username)) {
+                            System.out.println("[API] [" + username + "] " + clientMessage);
+                        } else {
+                            // Display the received message on the server console
+                            System.out.println("[Client:" + username + "] " + clientMessage);
 
-                        // Broadcast the message to all connected clients
-                        broadcastMessage("[Client:" + username + "] " + clientMessage);
+                            // Broadcast the message to all connected clients
+                            broadcastMessage("[Client:" + username + "] " + clientMessage);
+                        }
                     }
 
                 }
@@ -339,6 +352,21 @@ public class Server {
                     }
                 }
             } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+        public boolean ExistsUser(){
+            try {
+                String userContent = readFile(USER_PROFILE);
+                if (userContent != null) {
+                    JSONObject userProfiles = new JSONObject(userContent);
+                    if (userProfiles.has(username)) {
+                        JSONObject userProfile = userProfiles.getJSONObject(username);
+                        return true;
+                    }
+                }
+            } catch (JSONException e){
                 e.printStackTrace();
             }
             return false;
@@ -418,7 +446,7 @@ public class Server {
         int length = 256;
         String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         Random random = new Random();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++) {
             int number = random.nextInt(62);
             sb.append(str.charAt(number));
