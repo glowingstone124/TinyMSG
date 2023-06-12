@@ -1,5 +1,5 @@
 # TINYMSG BY glowingstone124
-## Release 1.1.1
+## Release 1.2
 Download Executable Files in Releases.
 
 Source Code is in the repo. 
@@ -19,7 +19,7 @@ then Server will automatically generate a config file called "config_server.json
 here is a sample of server config.
 
 ```
-{"srvmsg":"CONNECT SUCCESS","port":1234,"workingDirectory":"this/is/your/work/dictionary","accessFile":"text.txt","token":"this will automatically generate"}
+{"srvmsg":"CONNECT SUCCESS","port":1234,"workingDirectory":"this/is/your/work/dictionary","accessFile":"text.txt","token":"this will automatically generate","NOTOKEN": false, "NOPIC": false}
 ```
 
 ### Client
@@ -30,8 +30,9 @@ Client will automatically generate a config file called "client_cfg.json"
 
 here is a sample of client config.
 
+You can connect to some selected server using Source.
 ```
-{"serverAddress":"localhost","serverPort":1234,"token":"Your custom token here"}
+{"serverAddress":"localhost","serverPort":1234,"token":"Your custom token here", "Source":"http://qoriginal.vip:9090/instance.json", "fromSource":"NO"}
 ```
 then connect to your server by the prompt.
 
