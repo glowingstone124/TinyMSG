@@ -1,4 +1,5 @@
 package org.qo.tinymsg;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -13,15 +14,25 @@ import java.net.Socket;
 import java.io.File;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
+import java.nio.channels.Pipe;
+import java.util.Arrays;
 import java.util.Objects;
 import javax.imageio.ImageIO;
+import java.net.URL;
+import java.util.Scanner;
 
 
 public class Client{
     private String serverAddress;
+    public String fromSource;
     private int serverPort;
     private String token;
     private static final String CONFIG_FILE = "client_cfg.json";
+    public String Source;
+    public String localip;
+    public int localport;
+
+    public String Sel;
 
     public Client() {
         loadConfig();
@@ -39,9 +50,11 @@ public class Client{
 
             if (configContent != null) {
                 JSONObject jsonConfig = new JSONObject(configContent);
-                serverAddress = jsonConfig.getString("serverAddress");
-                serverPort = jsonConfig.getInt("serverPort");
+                localip = jsonConfig.getString("serverAddress");
+                localport = jsonConfig.getInt("serverPort");
                 token = jsonConfig.getString("token");
+                Source = jsonConfig.getString("Source");
+                fromSource = jsonConfig.getString("fromSource");
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -97,24 +110,86 @@ public class Client{
     }
 
     public void start() {
+        String ip = localip;
+        int port = localport;
         try {
-            // 连接服务器
-            Socket socket = new Socket(serverAddress, serverPort);
+            if (Objects.equals(fromSource, "YES")) {
+                        try {
+                            Scanner scanner = new Scanner(System.in);
+                            System.out.println("Fetching Servers from Source...");
+                            // 创建URL对象并打开连接
+                            URL url = new URL(Source);
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 
+                            // 读取JSON文件内容
+                            StringBuilder jsonString = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                jsonString.append(line);
+                            }
+                            reader.close();
+
+                            // 解析JSON数据
+                            JSONObject json = new JSONObject(jsonString.toString());
+                            String source = json.getString("Source");
+                            String lastUpdate = json.getString("Last-Update");
+                            JSONObject serverList = json.getJSONObject("Server-list");
+
+                            System.out.println("Source: " + source);
+                            System.out.println("Last Update: " + lastUpdate);
+                            System.out.println("Server List:");
+
+                            // 创建Scanner对象以接收用户输入
+
+                            // 显示服务器选项
+                            int index = 1;
+                            for (String server : serverList.keySet()) {
+                                System.out.println("(" + index + ") " + server);
+                                index++;
+                            }
+
+                            // 提示用户选择服务器
+                            System.out.print("Please select a server: ");
+                            int choice = scanner.nextInt();
+                            scanner.nextLine(); // 读取换行符
+
+                            // 验证用户输入
+                            if (choice < 1 || choice > serverList.length()) {
+                                System.out.println("Invalid choice!");
+                            } else {
+                                // 获取选中的服务器
+                                String selectedServer = serverList.names().getString(choice - 1);
+                                JSONObject serverDetails = serverList.getJSONObject(selectedServer);
+                                ip = serverDetails.getString("ip");
+                                port = serverDetails.getInt("port");
+
+                                System.out.println("Selected Server: " + selectedServer);
+                                System.out.println("IP: " + ip);
+                                System.out.println("Port: " + port);
+
+                                // 在这里可以使用selectedServer和port进行后续操作
+                                // 例如，将其传递给其他方法或用于用户界面等
+                            }
+
+                            // 关闭Scanner
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+            }
+            Socket socket = new Socket(ip, port);
             // 获取输入流，用于接收服务器发送的数据
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
             // 获取输出流，用于向服务器发送数据
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
             // 显示客户端启动消息
             System.out.println("TinyMSG client start");
+
             if (Objects.equals(token, "Your custom token here")) {
                 System.out.println("Please edit client_cfg.json to configure your own token. You can not connect to a server without a token. Make sure that your token is same with the server.");
             } else {
-                System.out.println(token);
+                //
             }
-            System.out.println("[client] you are now connecting to " + serverAddress + " port " + serverPort);
+            System.out.println("[client] you are now connecting to " + ip + " port " + port);
 
             // 从控制台读取用户输入的账户名称
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -152,8 +227,10 @@ public class Client{
                     System.exit(0);
                 }
                 if (serverMessage.startsWith("@pic")) {
-                    String CommandParts[] = serverMessage.split(" ");
-                    String PicPath = CommandParts[1];
+                    String[] CommandParts = serverMessage.split(" ");
+                    String[] PicPath = new String[]{CommandParts[1]};
+                    String[] NSFW = new String[]{CommandParts[2]};
+                    System.out.println("Server broadcasted a Picture from : " + Arrays.toString(PicPath) + " NSFW: " + Arrays.toString(NSFW));
                     ImageShow.main(PicPath);
                 } else {
                     // 在客户端打印接收到的数据

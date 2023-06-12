@@ -1,38 +1,36 @@
 package org.qo.tinymsg;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import javax.imageio.ImageIO;
 
 public class ImageShow implements Runnable {
-    private String filePath;
+    private String imageUrl;
 
-    public ImageShow(String filePath) {
-        this.filePath = filePath;
+    public ImageShow(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     @Override
     public void run() {
-        File file = new File(filePath);
-        BufferedImage image;
         try {
-            image = ImageIO.read(file);
+            // Download the image from the URL
+            BufferedImage image = ImageIO.read(new URL(imageUrl));
 
-            // 创建一个窗口
-            JFrame frame = new JFrame();
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            // Create a window
+            JFrame frame = new JFrame("View Pic");
+            frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
-            // 创建一个标签，并将图片设置为标签的图像
+            // Create a label and set the image as its icon
             JLabel label = new JLabel(new ImageIcon(image));
             frame.getContentPane().add(label);
 
-            // 自适应窗口大小以适应图像
+            // Adapt window size to fit the image
             frame.pack();
 
-            // 设置窗口可见
+            // Make the window visible
             frame.setVisible(true);
         } catch (IOException e) {
             e.printStackTrace();
@@ -40,22 +38,26 @@ public class ImageShow implements Runnable {
     }
 
     public void createAndShowGUI() {
-        // 创建 ImageShow 对象，并传入图片文件路径
-        ImageShow imageShow = new ImageShow(filePath);
+        // Create ImageShow object and pass the image URL
+        ImageShow imageShow = new ImageShow(imageUrl);
 
-        // 创建线程并启动
+        // Create a thread and start it
         Thread thread = new Thread(imageShow);
         thread.start();
     }
 
-    public static void main(String args) {
-            String filePath = args;
+    public static void main(String[] args) {
+        if (args.length > 0) {
+            String imageUrl = args[0];
 
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    ImageShow program = new ImageShow(filePath);
+                    ImageShow program = new ImageShow(imageUrl);
                     program.createAndShowGUI();
                 }
             });
+        } else {
+            System.out.println("Please provide the URL of an image as a command-line argument.");
+        }
     }
 }
