@@ -9,4 +9,8 @@ public class ColorfulText {
         public static final String BLUE = "\u001B[34m";
         public static final String MAGENTA = "\u001B[35m";
         public static final String CYAN = "\u001B[36m";
+        public static void test (){
+                 //test class to test if your terminal supports color
+                System.out.println(RED + "RED" + GREEN + "GREEN" + YELLOW + "YELLOW" + BLUE + "BLUE" + MAGENTA + "MAGENTA" + CYAN + "CYAN");
+        }
 }
