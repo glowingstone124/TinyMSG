@@ -4,7 +4,7 @@ Download Executable Files in Releases.
 
 If you want to connect to the Official server, please notice that server token is 0
 
-Official Server: ``http://qoriginal.vip:9090``
+Official Server: ``qoriginal.vip:1234``
 
 Source Code is in the repo. 
 
