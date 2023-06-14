@@ -2,6 +2,8 @@
 ## Release 1.2
 Download Executable Files in Releases.
 
+If you want to connect to the Official server, please notice that server token is 0!
+
 Source Code is in the repo. 
 
 If you occured an error in using this app, send me a issue.
