@@ -4,6 +4,8 @@ Download Executable Files in Releases.
 
 If you want to connect to the Official server, please notice that server token is 0
 
+Official Server: ``http://web.qorigial.vip:9090/instance.json``
+
 Source Code is in the repo. 
 
 If you occured an error in using this app, send me a issue.
@@ -34,7 +36,7 @@ here is a sample of client config.
 
 You can connect to some selected server using Source.
 ```
-{"serverAddress":"localhost","serverPort":1234,"token":"Your custom token here", "Source":"http://qoriginal.vip:9090/instance.json", "fromSource":"NO"}
+{"serverAddress":"localhost","serverPort":1234,"token":"Your custom token here", "Source":"http://sweb.qoriginal.vip:9090/instance.json", "fromSource":"NO"}
 ```
 then connect to your server by the prompt.
 
