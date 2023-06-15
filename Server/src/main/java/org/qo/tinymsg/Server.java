@@ -36,7 +36,7 @@ public class Server {
         onlineApi = new ArrayList<>();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Release 1.1";
+        ServerVersion = "Release 1.2";
         executorService = Executors.newFixedThreadPool(10);
     }
 
