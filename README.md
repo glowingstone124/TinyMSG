@@ -2,6 +2,10 @@
 ## Release 1.2
 Download Executable Files in Releases.
 
+Now I use github pages to store Sources, Update Checkers, etc...
+
+edit your Source to ``http://tmsg.nextage.top/source.json`` plz
+
 If you want to connect to the Official server, please notice that server token is 0
 
 Official Server: ``qoriginal.vip:1234``
