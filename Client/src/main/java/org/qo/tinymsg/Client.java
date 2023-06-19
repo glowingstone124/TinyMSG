@@ -1,9 +1,7 @@
 package org.qo.tinymsg;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -12,18 +10,16 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.io.File;
-import javax.swing.*;
-import java.awt.image.BufferedImage;
-import java.nio.channels.Pipe;
 import java.util.Arrays;
+import java.util.InputMismatchException;
 import java.util.Objects;
-import javax.imageio.ImageIO;
 import java.net.URL;
 import java.util.Scanner;
 
 
 public class Client{
     private String serverAddress;
+    public static String ISNSFW;
     public String fromSource;
     private int serverPort;
     private String token;
@@ -31,13 +27,13 @@ public class Client{
     public String Source;
     public String localip;
     public int localport;
-
-    public String Sel;
-
+    public boolean AcceptNSFW;
+    public double ClientVersion = 1.3;
+    public double version;
     public Client() {
         loadConfig();
     }
-
+    Debugger debugger = new Debugger();
     private void loadConfig() {
         if (!fileExists(CONFIG_FILE)) {
             // 配置文件不存在，生成默认配置文件
@@ -55,6 +51,7 @@ public class Client{
                 token = jsonConfig.getString("token");
                 Source = jsonConfig.getString("Source");
                 fromSource = jsonConfig.getString("fromSource");
+                AcceptNSFW = jsonConfig.getBoolean("AcceptNSFW");
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -72,7 +69,9 @@ public class Client{
             jsonConfig.put("serverAddress", "localhost");
             jsonConfig.put("serverPort", 1234);
             jsonConfig.put("token", "Your custom token here");
-
+            jsonConfig.put("Source", "https://tmsg.nextage.top/source.json");
+            jsonConfig.put("fromSource", "NO");
+            jsonConfig.put("AcceptNSFW", false);
             writeFile(CONFIG_FILE, jsonConfig.toString());
         } catch (JSONException e) {
             e.printStackTrace();
@@ -114,27 +113,24 @@ public class Client{
         int port = localport;
         try {
             if (Objects.equals(fromSource, "YES")) {
-                        try {
-                            Scanner scanner = new Scanner(System.in);
-                            System.out.println("Fetching Servers from Source...");
-                            // 创建URL对象并打开连接
-                            URL url = new URL(Source);
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-
-                            // 读取JSON文件内容
-                            StringBuilder jsonString = new StringBuilder();
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                jsonString.append(line);
-                            }
-                            reader.close();
-
+                try {
+                    Scanner scanner = new Scanner(System.in);
+                    System.out.println("Fetching Servers from Source...");
+                    // 创建URL对象并打开连接
+                    URL url = new URL(Source);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+                    // 读取JSON文件内容
+                    StringBuilder jsonString = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        jsonString.append(line);
+                    }
+                    reader.close();
                             // 解析JSON数据
-                            JSONObject json = new JSONObject(jsonString.toString());
-                            String source = json.getString("Source");
+                    JSONObject json = new JSONObject(jsonString.toString());
+                    String source = json.getString("Source");
                             String lastUpdate = json.getString("Last-Update");
                             JSONObject serverList = json.getJSONObject("Server-list");
-
                             System.out.println("Source: " + source);
                             System.out.println("Last Update: " + lastUpdate);
                             System.out.println("Server List:");
@@ -162,18 +158,18 @@ public class Client{
                                 JSONObject serverDetails = serverList.getJSONObject(selectedServer);
                                 ip = serverDetails.getString("ip");
                                 port = serverDetails.getInt("port");
-
+                                version = serverDetails.getDouble("version");
                                 System.out.println("Selected Server: " + selectedServer);
                                 System.out.println("IP: " + ip);
                                 System.out.println("Port: " + port);
-
-                                // 在这里可以使用selectedServer和port进行后续操作
-                                // 例如，将其传递给其他方法或用于用户界面等
+                                if (version > ClientVersion) {
+                                    System.out.println("You are using outdated client. Please notice that will be some error or bugs. We recommend you to user the latest version of TinyMSG. If you are running a Third-Party client, please ask your client provider.");
+                                }
                             }
 
                             // 关闭Scanner
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                        } catch (InputMismatchException e) {
+                            System.out.println("Invalid input! Default connect with local cfg.");
                         }
             }
             Socket socket = new Socket(ip, port);
@@ -230,8 +226,13 @@ public class Client{
                     String[] CommandParts = serverMessage.split(" ");
                     String[] PicPath = new String[]{CommandParts[1]};
                     String[] NSFW = new String[]{CommandParts[2]};
-                    System.out.println("Server broadcasted a Picture from : " + Arrays.toString(PicPath) + " NSFW: " + Arrays.toString(NSFW));
-                    ImageShow.main(PicPath);
+                    ISNSFW = Arrays.toString(NSFW);
+                    if (Objects.equals("ISNSFW", "true") && !AcceptNSFW) {
+                        System.out.println("PREVENTED AN NSFW PICTURE.");
+                    } else {
+                        System.out.println("Server broadcasted a Picture from : " + Arrays.toString(PicPath) + " NSFW: " + Arrays.toString(NSFW));
+                        ImageShow.main(PicPath);
+                    }
                 } else {
                     // 在客户端打印接收到的数据
                     System.out.println(serverMessage);
@@ -242,6 +243,8 @@ public class Client{
             //socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
     public static void main(String[] args) {
