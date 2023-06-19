@@ -74,10 +74,8 @@ public class ConsoleCommandHandler implements Runnable {
                     String Filepth = commandParts[1];
                     String NSFW = commandParts[2];
                     if (!server.NOPIC){
-                        if (Objects.equals(NSFW, "true") && Objects.equals(NSFW, "false")) {
                             server.broadcastMessage("@pic " + Filepth + " " + NSFW);
                             server.log("Successfully broadcasted a picture.", 0);
-                        }
                     } else {
                         server.log("server disabled picture send.", 2);
                     }

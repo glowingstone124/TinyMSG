@@ -1,6 +1,6 @@
 package org.qo.tinymsg;
 
-import com.google.protobuf.Api;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,7 +29,9 @@ public class Server {
     public final List<String> onlineApi;
     public boolean NOPIC;
     public boolean NOTOKEN;
-
+    public int OnlineCount = 0;
+    public boolean AllowRegister;
+    public boolean noUpdate;
 
     public Server() {
         loadConfig();
@@ -60,6 +62,8 @@ public class Server {
                     accesstoken = jsonConfig.getString("token");
                     NOTOKEN = jsonConfig.getBoolean("NOTOKEN");
                     NOPIC = jsonConfig.getBoolean("NOPIC");
+                    AllowRegister = jsonConfig.getBoolean("AllowRegister");
+                    noUpdate = jsonConfig.getBoolean("noUpdate");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -87,8 +91,9 @@ public class Server {
             jsonConfig.put("accessFile", accessFile);
             jsonConfig.put("srvmsg", srvmsg);
             jsonConfig.put("token", TokenGenerate());
-            jsonConfig.put("NOPIC", NOPIC);
-            jsonConfig.put("NOTOKEN", NOTOKEN);
+            jsonConfig.put("NOPIC", false);
+            jsonConfig.put("NOTOKEN", false);
+            jsonConfig.put("noUpdate", false);
 
             writeFile(CONFIG_FILE, jsonConfig.toString());
         } catch (JSONException e) {
@@ -139,14 +144,16 @@ public class Server {
             log("Your specfied log level is invalid. Please refactor your code.", 2);
         }
     }
-
-    public void start() {
+    public void start() throws IOException {
+        Debugger debugger = new Debugger();
+        if (debugger.needUpdate() || !noUpdate) {
+            log("You are now running outdated version of TinyMSG!", 2);
+        }
         try {
             Logger.startup();
             // Create ServerSocket object and bind it to the listening port
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             ServerSocket serverSocket = new ServerSocket(port);
-
             new Thread(new ConsoleCommandHandler(this)).start();
             // Display server startup message
             System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
@@ -202,6 +209,7 @@ public class Server {
                 broadcastMessage("[server] user " + username + " disconnected.");
                 log("[server] user " + username + " disconnected.",0);
             }
+            OnlineCount--;
             clients.remove(this);
             onlineUsers.remove(username);
 
@@ -230,7 +238,7 @@ public class Server {
                 // Receive the password from the client
                 String password = in.readLine();
                 String unverifytoken = in.readLine();
-                if (Objects.equals(unverifytoken, accesstoken)) {
+                if ((Objects.equals(unverifytoken, accesstoken) || NOTOKEN)) {
                     if (verifyCredentials(username, password)) {
                         // Check if the user is already online
                         if (isUserOnline(username)) {
@@ -243,6 +251,7 @@ public class Server {
                             log("Api " + username + " connected.", 1);
                         } else {
                             onlineUsers.add(username);
+                            OnlineCount++;
                             out.println(srvmsg);
                             // Add the user to the online users list
                         }
@@ -250,9 +259,37 @@ public class Server {
 
                         // Send server message to the client
                     } else {
-                        out.println("[ERROR] Invalid username or password. Disconnected.");
-                        disconnectClient(false);
-                        return;
+                        if (!AllowRegister) {
+                            out.println("[ERROR] Invalid username or password. Disconnected.");
+                            disconnectClient(false);
+                            return;
+                        } else if(AllowRegister) {
+                            out.println("[server] Invalid username. Do you want register a new user? (y/n)");
+                            String choise = in.readLine();
+                            if (choise.equals("y")) {
+                                out.println("Please enter your username.");
+                                String unregUsername = in.readLine();
+                                out.println("Please enter your password.");
+                                String unregPassword1 = in.readLine();
+                                out.println("Please retype your password.");
+                                String unregPassword2 = in.readLine();
+                                if (Objects.equals(unregPassword1, unregPassword2)) {
+                                    String uname = unregUsername;
+                                    String pswd = unregPassword1;
+                                    if (Register.reg(uname, pswd)){
+                                        out.println("Register complete. please reconnect to login.");
+                                        disconnectClient(false);
+                                        return;
+                                    } else if(!Register.reg(uname, pswd)) {
+                                        out.println("Failed to register.");
+                                        disconnectClient(false);
+                                    }
+                                }
+                            } else {
+                                disconnectClient(false);
+                                return;
+                            }
+                        }
                     }
                 } else {
                     out.println("[ERROR] Wrong token! If you believe this is an error, please contact with your server administrator.");
@@ -318,7 +355,8 @@ public class Server {
 
                     if (clientMessage != null && !clientMessage.isEmpty()) {
                         if (onlineApi.contains(username)) {
-                            System.out.println("[API] [" + username + "] " + clientMessage);
+                                System.out.println("[API] [" + username + "] " + clientMessage);
+                                broadcastMessage("[API] [" + username + "] " + clientMessage);
                         } else {
                             // Display the received message on the server console
                             System.out.println("[Client:" + username + "] " + clientMessage);
@@ -434,15 +472,15 @@ public class Server {
         for (String user : onlineUsers) {
             userList.append("\n").append(user);
         }
-        broadcastMessage("[server] Online Users:" + userList);
+        broadcastMessage("[server] Online Users:" + userList + "\n" + "Online count: " + OnlineCount);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Server server = new Server();
         server.start();
     }
 
-    private String TokenGenerate() {
+    private @NotNull String TokenGenerate() {
         int length = 256;
         String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         Random random = new Random();
@@ -539,6 +577,4 @@ public class Server {
         }
         return false;
     }
-
-
 }
