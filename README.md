@@ -4,6 +4,8 @@ Download Executable Files in Releases.
 
 Now I use github pages to store Sources, Update Checkers, etc...
 
+For some reason, please download latest source code at ``tmsg.glowingstone.cn/rawcode/latest.zip``
+
 edit your Source to ``http://tmsg.nextage.top/source.json`` plz
 
 If you want to connect to the Official server, please notice that server token is 0
