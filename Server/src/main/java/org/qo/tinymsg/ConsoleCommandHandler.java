@@ -111,17 +111,50 @@ public class ConsoleCommandHandler implements Runnable {
                 }
             } else if(command.startsWith("/inlog")){
                 String[] commandParts = command.split(" ");
-                if (commandParts.length == 2){
-                    String msg = commandParts[1];
-                    debugger.log(msg, 2);
+                if (commandParts.length >= 2){
+                    StringBuilder msgBuilder = new StringBuilder();
+                    if (commandParts[1].startsWith("\"")){
+                        for (int i = 1; i<commandParts.length; i++) {
+                            msgBuilder.append(commandParts[i]).append(" ");
+                            if (commandParts[i].endsWith("\n")) {
+                                break;
+                            }
+                        }
+                    } else {
+                        msgBuilder.append(commandParts[1]);
+                    }
+                    String msg = msgBuilder.toString().trim();
+                    if (msg.startsWith("\"") && msg.endsWith("\"")){
+                        // Remove the surrounding quotes if present
+                        msg = msg.substring(1, msg.length() - 1);
+                    }
+                    debugger.log(msg, 3);
                 } else {
                     server.log("Invalid command format.", 1);
                 }
             } else if(command.startsWith("/outlog")){
                 String[] commandParts = command.split(" ");
-                if (commandParts.length == 2){
-                    String msg = commandParts[1];
-                    debugger.outputlog(msg);
+                if (commandParts.length >= 2){
+                    StringBuilder msgBuilder = new StringBuilder();
+                    if (commandParts[1].startsWith("\"")){
+                        // Combine the parts within quotes
+                        for (int i = 1; i < commandParts.length; i++){
+                            msgBuilder.append(commandParts[i]).append(" ");
+                            if (commandParts[i].endsWith("\"")){
+                                break;
+                            }
+                        }
+                    } else {
+                        msgBuilder.append(commandParts[1]);
+                    }
+
+                    String msg = msgBuilder.toString().trim();
+                    if (msg.startsWith("\"") && msg.endsWith("\"")){
+                        // Remove the surrounding quotes if present
+                        msg = msg.substring(1, msg.length() - 1);
+                    }
+
+                    debugger.outputlog("[UOP] " + msg);
                 } else {
                     server.log("Invalid command format.", 1);
                 }

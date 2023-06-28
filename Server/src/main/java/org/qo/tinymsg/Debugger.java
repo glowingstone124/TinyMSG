@@ -9,10 +9,10 @@ import java.net.URL;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 public class Debugger {
-    Server server = new Server();
+    static Server server = new Server();
     Logger logger = new Logger();
 
-    public void log(String message, int lvl) {
+    public static void log(String message, int lvl) {
         server.log(message, lvl);
     }
 
@@ -20,7 +20,7 @@ public class Debugger {
         logger.log(message);
     }
 
-    public boolean testConnection(String url) throws Exception {
+    public static boolean testConnection(String url) throws Exception {
 
         int timeOut = 3000;
         if (InetAddress.getByName(url).isReachable(timeOut)) {
@@ -29,11 +29,11 @@ public class Debugger {
         return true;
     }
     public boolean needUpdate() throws IOException {
-        String url = "https://tmsg.nextage.top/update.json";
+        String url = "https://tmsg.glowingstone.cn/update.json";
         try {
             JSONObject json = readJsonFromUrl(url);
             double version = json.getDouble("version");
-            if(version > 1.2) {
+            if(version > Server.innerVersion) {
                 return true;
             }
         } catch (IOException e) {

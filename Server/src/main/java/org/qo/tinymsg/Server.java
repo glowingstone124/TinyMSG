@@ -3,25 +3,28 @@ package org.qo.tinymsg;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.qo.tinymsg.Plugins.PluginLoader;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.Objects;import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 public class Server {
     private final ExecutorService executorService;
+    public static boolean AllowPlugin;
     public static final String CONFIG_FILE = "config_server.json";
     public static final String USER_PROFILE = "users.json";
     public static final String LOG_FILE = "logs.log";
+    public static final String PLUGIN_PROFILE = "plugin_config.json";
+    public static final String API_LIST = "apilist.json";
     public static String ServerVersion;
     public int port;
     public String workingDirectory;
-    private String accessFile;
     private String srvmsg;
     public final List<ClientHandler> clients;
     public final List<String> onlineUsers;
@@ -32,38 +35,40 @@ public class Server {
     public int OnlineCount = 0;
     public boolean AllowRegister;
     public boolean noUpdate;
-
+    public static double innerVersion = 17;
     public Server() {
         loadConfig();
         onlineApi = new ArrayList<>();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Release 1.2";
+        ServerVersion = "Release 1.4";
         executorService = Executors.newFixedThreadPool(10);
     }
 
     public String getAccessToken() {
         return accesstoken;
     }
-
     private void loadConfig() {
         // Load server configuration
         if (fileExists()) {
             // If the configuration file exists, read the configuration
             try {
                 String configContent = readFile(CONFIG_FILE);
-
+                String pluginContent = readFile(PLUGIN_PROFILE);
                 if (configContent != null) {
                     JSONObject jsonConfig = new JSONObject(configContent);
                     port = jsonConfig.getInt("port");
                     workingDirectory = jsonConfig.getString("workingDirectory");
-                    accessFile = jsonConfig.getString("accessFile");
                     srvmsg = jsonConfig.getString("srvmsg");
                     accesstoken = jsonConfig.getString("token");
                     NOTOKEN = jsonConfig.getBoolean("NOTOKEN");
                     NOPIC = jsonConfig.getBoolean("NOPIC");
                     AllowRegister = jsonConfig.getBoolean("AllowRegister");
                     noUpdate = jsonConfig.getBoolean("noUpdate");
+                }
+                if (pluginContent != null) {
+                    JSONObject pluginconfig = new JSONObject(pluginContent);
+                    AllowPlugin = pluginconfig.getBoolean("EnablePlugin");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -72,7 +77,6 @@ public class Server {
             // Configuration file doesn't exist, use default configuration and generate the configuration file
             port = 1234;
             workingDirectory = System.getProperty("user.dir");
-            accessFile = "text.txt";
             srvmsg = "CONNECT SUCCESS";
             createDefaultConfig();
         }
@@ -88,7 +92,6 @@ public class Server {
             JSONObject jsonConfig = new JSONObject();
             jsonConfig.put("port", port);
             jsonConfig.put("workingDirectory", workingDirectory);
-            jsonConfig.put("accessFile", accessFile);
             jsonConfig.put("srvmsg", srvmsg);
             jsonConfig.put("token", TokenGenerate());
             jsonConfig.put("NOPIC", false);
@@ -96,6 +99,9 @@ public class Server {
             jsonConfig.put("noUpdate", false);
 
             writeFile(CONFIG_FILE, jsonConfig.toString());
+            JSONObject plugincfg = new JSONObject();
+            jsonConfig.put("EnablePlugin", false);
+            writeFile(PLUGIN_PROFILE, plugincfg.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -140,23 +146,34 @@ public class Server {
         } else if (level == 2) {
             System.out.println(ColorfulText.RED + input + ColorfulText.RESET);
             //log level: ERROR
+        } else if (level == 3) {
+            System.out.println(ColorfulText.CYAN + input + ColorfulText.RESET);
         } else {
             log("Your specfied log level is invalid. Please refactor your code.", 2);
         }
     }
-    public void start() throws IOException {
+    public void start() throws Exception {
+        System.out.println(ColorfulText.LOGO);
+        //Print an ASCLL STYLE logo.
+        if (AllowPlugin)
+        {
+            PluginLoader.startup();
+        }
         Debugger debugger = new Debugger();
-        if (debugger.needUpdate() || !noUpdate) {
-            log("You are now running outdated version of TinyMSG!", 2);
+        if (debugger.needUpdate()) {
+            if (!noUpdate) {
+                log("You are now running outdated version of TinyMSG!", 2);
+            }
         }
         try {
+            ApiControler.start();
             Logger.startup();
             // Create ServerSocket object and bind it to the listening port
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             ServerSocket serverSocket = new ServerSocket(port);
             new Thread(new ConsoleCommandHandler(this)).start();
             // Display server startup message
-            System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port, output file name is " + accessFile);
+            System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port");
             String os = System.getProperty("os.name");
             if (os.equals("Linux")) {
                 log("You are now running TinyMSG on Operating System based on Linux. To enable ALL features of TinyMSG, please run it under SUDO mode.", 0);
@@ -190,6 +207,7 @@ public class Server {
     private void broadcastMessage(String message, String specify) {
         // Broadcast the message to all connected clients
         for (ClientHandler client : clients) {
+            Logger.log(message);
             if (specify.contentEquals("ALL") || specify.contentEquals(client.username)) client.sendMessage(message);
         }
     }
@@ -201,7 +219,6 @@ public class Server {
 
         public ClientHandler(Socket socket) {
             clientSocket = socket;
-
         }
 
         private void disconnectClient(boolean doBroadcast) {
@@ -218,10 +235,9 @@ public class Server {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                //empty catch block
             }
         }
-
 
         public void run() {
             try {
@@ -239,13 +255,14 @@ public class Server {
                 String password = in.readLine();
                 String unverifytoken = in.readLine();
                 if ((Objects.equals(unverifytoken, accesstoken) || NOTOKEN)) {
-                    if (verifyCredentials(username, password)) {
+                    if (verifyCredentials(username, password))
+                    {
                         // Check if the user is already online
                         if (isUserOnline(username)) {
                             out.println("[ERROR] User is already logged in. Disconnected.");
                             return;
                         }
-                        if (ApiControl.isServer(username)) {
+                        if (ApiControler.isServer(username)) {
                             onlineApi.add(username);
                             out.println("SUCCESS CONNECTED TO SERVER");
                             log("Api " + username + " connected.", 1);
@@ -263,10 +280,10 @@ public class Server {
                             out.println("[ERROR] Invalid username or password. Disconnected.");
                             disconnectClient(false);
                             return;
-                        } else if(AllowRegister) {
-                            out.println("[server] Invalid username. Do you want register a new user? (y/n)");
-                            String choise = in.readLine();
-                            if (choise.equals("y")) {
+                        } else {
+                            out.println("[server] Invalid username. " + "Do you want register a new user? (y/n)");
+                            String choice = in.readLine();
+                            if (choice.equals("y")) {
                                 out.println("Please enter your username.");
                                 String unregUsername = in.readLine();
                                 out.println("Please enter your password.");
@@ -355,12 +372,13 @@ public class Server {
 
                     if (clientMessage != null && !clientMessage.isEmpty()) {
                         if (onlineApi.contains(username)) {
-                                System.out.println("[API] [" + username + "] " + clientMessage);
-                                broadcastMessage("[API] [" + username + "] " + clientMessage);
+                            System.out.println("[API] [" + username + "] " + clientMessage);
+                            broadcastMessage("[API] [" + username + "] " + clientMessage);
+                            Logger.log("[API] [" + username + "] " + clientMessage);
                         } else {
                             // Display the received message on the server console
                             System.out.println("[Client:" + username + "] " + clientMessage);
-
+                            Logger.log("[Client:" + username + "] " + clientMessage);
                             // Broadcast the message to all connected clients
                             broadcastMessage("[Client:" + username + "] " + clientMessage);
                         }
@@ -370,7 +388,7 @@ public class Server {
 
                 disconnectClient(false);
             } catch (IOException e) {
-                e.printStackTrace();
+                //empty catch block
                 disconnectClient(true);
             }
 
@@ -419,12 +437,18 @@ public class Server {
     private boolean verifyCredentials(String username, String password) {
         try {
             String userContent = readFile(USER_PROFILE);
+            String ApiContent = readFile(API_LIST);
             if (userContent != null) {
                 JSONObject userProfiles = new JSONObject(userContent);
+                JSONObject apiContent = new JSONObject(ApiContent);
                 if (userProfiles.has(username)) {
                     JSONObject userProfile = userProfiles.getJSONObject(username);
                     String storedPassword = userProfile.getString("password");
                     return password.equals(storedPassword);
+                } else if (apiContent.has(username)) {
+                    JSONObject apicnt = apiContent.getJSONObject(username);
+                    JSONObject apipswd = apiContent.getJSONObject("password");
+                    return password.equals(apipswd);
                 }
             }
         } catch (JSONException e) {
@@ -475,7 +499,7 @@ public class Server {
         broadcastMessage("[server] Online Users:" + userList + "\n" + "Online count: " + OnlineCount);
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         Server server = new Server();
         server.start();
     }

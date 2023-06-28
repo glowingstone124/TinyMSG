@@ -10,7 +10,13 @@ public class ColorfulText {
         public static final String MAGENTA = "\u001B[35m";
         public static final String CYAN = "\u001B[36m";
         public static void test (){
-                 //test class to test if your terminal supports color
                 System.out.println(RED + "RED" + GREEN + "GREEN" + YELLOW + "YELLOW" + BLUE + "BLUE" + MAGENTA + "MAGENTA" + CYAN + "CYAN");
         }
+        public static final String LOGO = """
+                 ______ _             __  ___ ____ _____
+                /_  __/(_)___  __ __ /  |/  // __// ___/
+                 / /  / // _ \\/ // // /|_/ /_\\ \\ / (_ /
+                /_/  /_//_//_/\\_, //_/  /_//___/ \\___/
+                             /___/
+                """;
 }
