@@ -5,15 +5,11 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import javax.imageio.ImageIO;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.io.File;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 
 public class ImageShow implements Runnable {
@@ -44,16 +40,13 @@ public class ImageShow implements Runnable {
             int scaledWidth = (int) (originalWidth * scaleFactor);
             int scaledHeight = (int) (originalHeight * scaleFactor);
             Image scaledImage = originalImage.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
-
             // Create a window
             JFrame frame = new JFrame("View Pic");
             frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-
             // Create a label and set the scaled image as its icon
             JLabel label = new JLabel(new ImageIcon(scaledImage));
             frame.getContentPane().add(label);
             frame.setSize(scaledWidth, scaledHeight);
-
             // Make the window visible
             frame.setVisible(true);
             JMenuBar menuBar = new JMenuBar();
@@ -87,6 +80,7 @@ public class ImageShow implements Runnable {
             // 将顶部面板添加到 JFrame 的顶部位置
             frame.getContentPane().add(topPanel, BorderLayout.NORTH);
 
+
         } catch (IOException e) {
             //
         }
@@ -101,7 +95,6 @@ public class ImageShow implements Runnable {
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
-
             try {
                 ImageIO.write(image, "jpg", fileToSave);
                 System.out.println("Image saved successfully.");

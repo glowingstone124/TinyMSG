@@ -28,7 +28,7 @@ public class Client{
     public String localip;
     public int localport;
     public boolean AcceptNSFW;
-    public double ClientVersion = 1.3;
+    public double ClientVersion = 17;
     public double version;
     public Client() {
         loadConfig();
@@ -69,7 +69,7 @@ public class Client{
             jsonConfig.put("serverAddress", "localhost");
             jsonConfig.put("serverPort", 1234);
             jsonConfig.put("token", "Your custom token here");
-            jsonConfig.put("Source", "https://tmsg.nextage.top/source.json");
+            jsonConfig.put("Source", "https://tmsg.glowingstone.cn/source.json");
             jsonConfig.put("fromSource", "NO");
             jsonConfig.put("AcceptNSFW", false);
             writeFile(CONFIG_FILE, jsonConfig.toString());
@@ -163,7 +163,7 @@ public class Client{
                                 System.out.println("IP: " + ip);
                                 System.out.println("Port: " + port);
                                 if (version > ClientVersion) {
-                                    System.out.println("You are using outdated client. Please notice that will be some error or bugs. We recommend you to user the latest version of TinyMSG. If you are running a Third-Party client, please ask your client provider.");
+                                    System.out.println("You are using outdated client. Please notice that will be some error or unsupported features. We recommend you to user the latest version of TinyMSG. If you are running a Third-Party client, please ask your client provider.");
                                 }
                             }
 
