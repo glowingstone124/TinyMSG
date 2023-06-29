@@ -1,5 +1,5 @@
 # TINYMSG BY glowingstone124
-## Release 1.2
+## Release 1.4
 Download Executable Files in Releases.
 
 Now I use github pages to store Sources, Update Checkers, etc...
