@@ -29,7 +29,7 @@ then Server will automatically generate a config file called "config_server.json
 here is a sample of server config.
 
 ```
-{"srvmsg":"CONNECT SUCCESS","port":1234,"workingDirectory":"This is your work dictionary","accessFile":"text.txt","token":"0","NOTOKEN": false, "NOPIC": false, "AllowRegister": true, "noUpdate":  false, "max-trhead": 100}
+{"srvmsg":"CONNECT SUCCESS","port":1234,"workingDirectory":"This is your work dictionary","accessFile":"text.txt","token":"0","NOTOKEN": false, "NOPIC": false, "AllowRegister": true, "noUpdate":  false, "Max-user": 100}
 ```
 
 ### Client
