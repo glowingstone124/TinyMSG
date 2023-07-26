@@ -4,16 +4,20 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.qo.tinymsg.Plugins.PluginLoader;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;import java.util.Random;
+import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@SpringBootApplication
 public class Server {
     private final ExecutorService executorService;
     public static boolean AllowPlugin;
@@ -26,23 +30,25 @@ public class Server {
     public int port;
     public String workingDirectory;
     private String srvmsg;
+    public boolean autoexecute;
     public final List<ClientHandler> clients;
     public final List<String> onlineUsers;
     private String accesstoken;
     public final List<String> onlineApi;
+    public int maxThread;
     public boolean NOPIC;
     public boolean NOTOKEN;
     public int OnlineCount = 0;
     public boolean AllowRegister;
     public boolean noUpdate;
-    public static double innerVersion = 17;
+    public static double innerVersion = 18;
     public Server() {
         loadConfig();
         onlineApi = new ArrayList<>();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Release 1.4";
-        executorService = Executors.newFixedThreadPool(10);
+        ServerVersion = "Release 1.5";
+        executorService = Executors.newFixedThreadPool(maxThread);
     }
 
     public String getAccessToken() {
@@ -65,6 +71,8 @@ public class Server {
                     NOPIC = jsonConfig.getBoolean("NOPIC");
                     AllowRegister = jsonConfig.getBoolean("AllowRegister");
                     noUpdate = jsonConfig.getBoolean("noUpdate");
+                    maxThread = jsonConfig.getInt("Max-user");
+                    autoexecute = jsonConfig.getBoolean("autoexecute");
                 }
                 if (pluginContent != null) {
                     JSONObject pluginconfig = new JSONObject(pluginContent);
@@ -97,6 +105,8 @@ public class Server {
             jsonConfig.put("NOPIC", false);
             jsonConfig.put("NOTOKEN", false);
             jsonConfig.put("noUpdate", false);
+            jsonConfig.put("Max-user", 10);
+            jsonConfig.put("autoexecute", true);
 
             writeFile(CONFIG_FILE, jsonConfig.toString());
             JSONObject plugincfg = new JSONObject();
@@ -153,34 +163,57 @@ public class Server {
         }
     }
     public void start() throws Exception {
+        newTimer timer = new newTimer();
+        timer.start();
         System.out.println(ColorfulText.LOGO);
+        System.out.println("TinyMSG Author: Glowingstone");
+        Thread.sleep(1000);
+        Debugger.clean();
         //Print an ASCLL STYLE logo.
-        if (AllowPlugin)
-        {
+        if (AllowPlugin) {
             PluginLoader.startup();
         }
-        Debugger debugger = new Debugger();
-        if (debugger.needUpdate()) {
-            if (!noUpdate) {
-                log("You are now running outdated version of TinyMSG!", 2);
+        executorService.execute(() -> {
+            try {
+                Debugger debugger = new Debugger();
+                if (debugger.needUpdate() || !noUpdate) {
+                    log("[Update]You are now running an outdated version of TinyMSG!", 2);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-        }
+        });
         try {
             ApiControler.start();
+
+            if (ApiControler.Enable == true) {
+                SpringApplication.run(ApiApplication.class);
+            }
             Logger.startup();
             // Create ServerSocket object and bind it to the listening port
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             ServerSocket serverSocket = new ServerSocket(port);
             new Thread(new ConsoleCommandHandler(this)).start();
             // Display server startup message
+            // Thread.sleep(10000);
             System.out.println("[start] TinyMSG Server " + ServerVersion + " Started! Bind at " + port + " port");
             String os = System.getProperty("os.name");
             if (os.equals("Linux")) {
                 log("You are now running TinyMSG on Operating System based on Linux. To enable ALL features of TinyMSG, please run it under SUDO mode.", 0);
+                if(autoexecute){
+                    log("automatically execute: sudo ufw allow (your port)/tcp to open selected port. Disable this feature in server-config: autoexecute",0);
+                    Runtime.getRuntime().exec(new String[]{"sudo ufw allow " + port + "/tcp"});
+                }
             } else {
                 log("Your Operating System is: " + os, 0);
                 log("Your are now running TinyMSG on Windows or MacOS(anyway) please ensure that you gave TinyMSG complete permission to Read and Write files.", 0);
             }
+            timer.stop();
+            int finTimer = timer.counter / 1000;
+            if (finTimer == 0) {
+                finTimer++;
+            }
+            log("Started in " + finTimer + "s",0);
 
             while (true) {
                 // Listen for client connection requests
@@ -212,7 +245,7 @@ public class Server {
         }
     }
 
-    private class ClientHandler extends Thread {
+    public class ClientHandler extends Thread {
         private final Socket clientSocket;
         private PrintWriter out;
         public String username;
@@ -221,7 +254,7 @@ public class Server {
             clientSocket = socket;
         }
 
-        private void disconnectClient(boolean doBroadcast) {
+        public void disconnectClient(boolean doBroadcast) {
             if (doBroadcast) {
                 broadcastMessage("[server] user " + username + " disconnected.");
                 log("[server] user " + username + " disconnected.",0);
@@ -329,7 +362,7 @@ public class Server {
                         out.println("[server] /version to show Server Version");
                         out.println("[server] /list to show online users");
                         out.println("[server] /permission to show your permission level");
-                        out.println("[server] /stop to stop the server");
+                        out.println("[server] /Stop to Stop the server");
                         clientMessage = "";
                     }
                     if (clientMessage.equalsIgnoreCase("/list")) {
@@ -355,10 +388,9 @@ public class Server {
                         disconnectClient(true);
                         clientMessage = "";
                     }
-                    if (clientMessage.equalsIgnoreCase("/stop")) {
+                    if (clientMessage.equalsIgnoreCase("/Stop")) {
                         if (isAdmin(username)) {
-
-                            System.exit(0);
+                            new Stop();
                         } else {
                             broadcastMessage("You don't have permission to DO THAT!", username);
                             clientMessage = "";
@@ -437,18 +469,12 @@ public class Server {
     private boolean verifyCredentials(String username, String password) {
         try {
             String userContent = readFile(USER_PROFILE);
-            String ApiContent = readFile(API_LIST);
             if (userContent != null) {
                 JSONObject userProfiles = new JSONObject(userContent);
-                JSONObject apiContent = new JSONObject(ApiContent);
                 if (userProfiles.has(username)) {
                     JSONObject userProfile = userProfiles.getJSONObject(username);
                     String storedPassword = userProfile.getString("password");
                     return password.equals(storedPassword);
-                } else if (apiContent.has(username)) {
-                    JSONObject apicnt = apiContent.getJSONObject(username);
-                    JSONObject apipswd = apiContent.getJSONObject("password");
-                    return password.equals(apipswd);
                 }
             }
         } catch (JSONException e) {
@@ -491,7 +517,7 @@ public class Server {
         return onlineUsers.contains(username);
     }
 
-    private void sendOnlineUsersList() {
+    public void sendOnlineUsersList() {
         StringBuilder userList = new StringBuilder();
         for (String user : onlineUsers) {
             userList.append("\n").append(user);

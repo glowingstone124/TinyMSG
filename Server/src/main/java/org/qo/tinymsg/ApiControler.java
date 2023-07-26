@@ -8,9 +8,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 
 public class ApiControler {
-    public static boolean EnableMinecraft;
+    public static boolean Enable;
     public static final String API_CONFIG = "api.json";
 
     public static void loadconfig() {
@@ -21,7 +24,7 @@ public class ApiControler {
 
                 if (Apiconfig != null) {
                     JSONObject jsonConfig = new JSONObject(Apiconfig);
-                    EnableMinecraft = jsonConfig.getBoolean("EnableMinecraft");
+                    Enable = jsonConfig.getBoolean("Enable");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -29,8 +32,8 @@ public class ApiControler {
         } else {
             // Configuration file doesn't exist, use default configuration and generate the configuration file
             JSONObject jsonConfig = new JSONObject();
-            jsonConfig.put("EnableMinecraft", false);
-            //TODO api support
+            jsonConfig.put("Enable", true);
+            Enable = true;
             writeFile(API_CONFIG, jsonConfig.toString());
 
         }

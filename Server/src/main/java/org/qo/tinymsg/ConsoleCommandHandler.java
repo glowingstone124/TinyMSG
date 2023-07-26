@@ -4,6 +4,8 @@ package org.qo.tinymsg;
 import java.util.Objects;
 import java.util.Scanner;
 
+import static org.qo.tinymsg.Stop.stop;
+
 public class ConsoleCommandHandler implements Runnable {
     private Server server;
     public static Debugger debugger;
@@ -40,22 +42,22 @@ public class ConsoleCommandHandler implements Runnable {
                         /help for a list of avaliable commands.
                         /token to show server token
                         /adduser <username> <password> to add a USER.
-                        /stop to stop server.
+                        /Stop to Stop server.
                         /addadmin <username> <password> to add a Administrator.
                         /deluser <username> to delete a USER.
                         /inlog <log> to create a server-side log. (debug)
                         /outlog <log> to output a log to log file. (debug)
                         /pic <picture path> <NSFW status> to broadcast a pic.
                         """);
-            } else if (command.startsWith("/stop")) {
-                server.log("retype '/stop Confirm' to stop the server", 0);
-                if (command.startsWith("/stop")) {
+            } else if (command.startsWith("/Stop")) {
+                server.log("retype '/Stop Confirm' to Stop the server", 0);
+                if (command.startsWith("/Stop")) {
                     String CommandParts[] = command.split(" ");
                     if (CommandParts.length == 2) {
                         String willstop = CommandParts[1];
                         if (Objects.equals(willstop, "Confirm")) {
                             System.out.println("Exiting.");
-                            System.exit(0);
+                            stop();
                         }
                     }
                 } else {
