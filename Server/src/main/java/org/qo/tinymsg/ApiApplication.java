@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 @RestController
 @SpringBootApplication
 public class ApiApplication implements ErrorController {
@@ -59,10 +62,14 @@ public class ApiApplication implements ErrorController {
         @RequestMapping("/status")
         @Scheduled(fixedRate = 500) // 60000ms = 1 minute
         String status() {
+                SimpleDateFormat sdf = new SimpleDateFormat();// 格式化时间
+                sdf.applyPattern("yyyy-MM-dd HH:mm:ss a");// a为am/pm的标记
+                Date date = new Date();// 获取当前时间
                 StringBuilder userList = new StringBuilder();
                 for (String user : server.onlineUsers) {
                     userList.append("<br>").append(user);
                 }
-                return "Online Users:" + userList + "<br>" + "Online count: " + server.OnlineCount;
+                server.log(server.onlineUsers.toString(),0);
+                return "Online Users:" + userList + "<br>" + "Online count: " + server.OnlineCount + "<br>" + sdf.format(date);
         }
     }

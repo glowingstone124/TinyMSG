@@ -25,23 +25,26 @@ public class Server {
     public static final String USER_PROFILE = "users.json";
     public static final String LOG_FILE = "logs.log";
     public static final String PLUGIN_PROFILE = "plugin_config.json";
-    public static final String API_LIST = "apilist.json";
     public static String ServerVersion;
     public int port;
     public String workingDirectory;
     private String srvmsg;
     public boolean autoexecute;
     public final List<ClientHandler> clients;
-    public final List<String> onlineUsers;
+    public static List<String> onlineUsers;
     private String accesstoken;
     public final List<String> onlineApi;
     public int maxThread;
     public boolean NOPIC;
     public boolean NOTOKEN;
-    public int OnlineCount = 0;
+    public static int OnlineCount = 0;
     public boolean AllowRegister;
     public boolean noUpdate;
     public static double innerVersion = 18;
+    public static void main(String[] args) throws Exception {
+        Server server = new Server();
+        server.start();
+    }
     public Server() {
         loadConfig();
         onlineApi = new ArrayList<>();
@@ -294,11 +297,6 @@ public class Server {
                         if (isUserOnline(username)) {
                             out.println("[ERROR] User is already logged in. Disconnected.");
                             return;
-                        }
-                        if (ApiControler.isServer(username)) {
-                            onlineApi.add(username);
-                            out.println("SUCCESS CONNECTED TO SERVER");
-                            log("Api " + username + " connected.", 1);
                         } else {
                             onlineUsers.add(username);
                             OnlineCount++;
@@ -524,11 +522,14 @@ public class Server {
         }
         broadcastMessage("[server] Online Users:" + userList + "\n" + "Online count: " + OnlineCount);
     }
-
-    public static void main(String[] args) throws Exception {
-        Server server = new Server();
-        server.start();
+    public String netOnlineUsersList() {
+        StringBuilder userList = new StringBuilder();
+        for (String user : onlineUsers) {
+            userList.append("<br>").append(user);
+        }
+       return "Online Users:" + userList + "<br>" + "Online count: " + OnlineCount;
     }
+
 
     private @NotNull String TokenGenerate() {
         int length = 256;
