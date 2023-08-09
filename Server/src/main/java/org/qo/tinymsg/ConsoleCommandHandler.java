@@ -70,7 +70,7 @@ public class ConsoleCommandHandler implements Runnable {
                 } else {
                     server.log("unCorrect argument.", 1);
                 }
-            } else if (command.startsWith("/pic")){
+            } else if (command.startsWith("/pic")) {
                 String[] commandParts = command.split(" ");
                 if (commandParts.length == 3) {
                     String Filepth = commandParts[1];

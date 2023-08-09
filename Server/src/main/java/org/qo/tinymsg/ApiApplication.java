@@ -24,34 +24,36 @@ public class ApiApplication implements ErrorController {
         }
         @RequestMapping("/userlist")
         @Scheduled(fixedRate = 300000) // 60000ms = 1 minute
-        String userlist(@RequestParam int raw) {
+        String userlist() {
             String userContent = server.readFile(server.USER_PROFILE);
             StringBuilder usersb = new StringBuilder();
+            JSONObject returnObject = new JSONObject();
             try {
                 // 解析JSON字符串
                 JSONObject jsonObject = new JSONObject(userContent);
-
                 // 遍历JSON对象并输出结果
                 for (String username : jsonObject.keySet()) {
                     JSONObject userObject = jsonObject.getJSONObject(username);
                     int permission = userObject.getInt("permission");
                     String permissionlvl = "unknown";
-                    switch (permission){
-                        case 0: permissionlvl = "user";
-                        break;
-                        case 1: permissionlvl = "administrator";
-                        break;
+                    switch (permission) {
+                        case 0:
+                            permissionlvl = "user";
+                            break;
+                        case 1:
+                            permissionlvl = "administrator";
+                            break;
                     }
-                    if (raw == 0) {
-                        usersb.append(username + ": permission level: " + permissionlvl + "<br>");
-                    } else {
-                        usersb.append(username + ": permission level: " + permissionlvl);
-                    }
+
+                    JSONObject userReturnObject = new JSONObject();
+                    userReturnObject.put("permission", permissionlvl);
+
+                    returnObject.put(username, userReturnObject);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            return usersb.toString();
+            return returnObject.toString();
         }
         @RequestMapping("/error")
         String err() {

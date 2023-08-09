@@ -33,14 +33,14 @@ public class Server {
     public final List<ClientHandler> clients;
     public static List<String> onlineUsers;
     private String accesstoken;
-    public final List<String> onlineApi;
+    public static List<String> onlineApi;
     public int maxThread;
     public boolean NOPIC;
     public boolean NOTOKEN;
     public static int OnlineCount = 0;
     public boolean AllowRegister;
     public boolean noUpdate;
-    public static double innerVersion = 18;
+    public static int innerVersion = 18;
     public static void main(String[] args) throws Exception {
         Server server = new Server();
         server.start();
@@ -297,15 +297,17 @@ public class Server {
                         if (isUserOnline(username)) {
                             out.println("[ERROR] User is already logged in. Disconnected.");
                             return;
+                        } else if(isApi(username)){
+                            onlineApi.add(username);
+                            OnlineCount++;
+                            out.println(srvmsg);
+                            // Add the user to the online users list
                         } else {
                             onlineUsers.add(username);
                             OnlineCount++;
                             out.println(srvmsg);
                             // Add the user to the online users list
                         }
-
-
-                        // Send server message to the client
                     } else {
                         if (!AllowRegister) {
                             out.println("[ERROR] Invalid username or password. Disconnected.");
@@ -625,6 +627,25 @@ public class Server {
             }
         } catch (JSONException e) {
             e.printStackTrace();
+        }
+        return false;
+    }
+    public boolean isApi(String username){
+        String userContent = readFile(USER_PROFILE);
+        JSONObject userProfiles;
+        if (userContent != null) {
+            userProfiles = new JSONObject(userContent);
+        } else {
+            return false;
+        }
+        if (userProfiles.has(username)){
+            JSONObject userProfile = userProfiles.getJSONObject(username);
+            int userPermissionLevel = userProfile.getInt("permission");
+            if (userPermissionLevel == 2){
+                return true;
+            } else {
+                return false;
+            }
         }
         return false;
     }
