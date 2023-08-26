@@ -8,9 +8,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
 
 public class ApiControler {
     public static boolean Enable;
@@ -38,7 +35,16 @@ public class ApiControler {
 
         }
     }
-    static Server server = new Server();
+    static Server server;
+
+    static {
+        try {
+            server = new Server();
+        } catch (Exceptions.IllegalConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static boolean isServer(String username) {
         try {
             String userContent = server.readFile(Server.USER_PROFILE);

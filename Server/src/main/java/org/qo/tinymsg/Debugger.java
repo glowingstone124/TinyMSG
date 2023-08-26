@@ -1,3 +1,4 @@
+
 package org.qo.tinymsg;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +10,16 @@ import java.net.URL;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 public class Debugger {
-    static Server server = new Server();
+    static Server server;
+
+    static {
+        try {
+            server = new Server();
+        } catch (Exceptions.IllegalConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     Logger logger = new Logger();
 
     public static void log(String message, int lvl) {
@@ -65,4 +75,3 @@ public class Debugger {
     }
 
 }
-

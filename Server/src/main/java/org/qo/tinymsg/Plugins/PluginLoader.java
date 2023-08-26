@@ -1,6 +1,7 @@
 package org.qo.tinymsg.Plugins;
 
 import org.qo.tinymsg.Debugger;
+import org.qo.tinymsg.Exceptions;
 import org.qo.tinymsg.Logger;
 import org.qo.tinymsg.Server;
 
@@ -26,7 +27,15 @@ public class PluginLoader {
      */
     public static String folderPath;
     public static String workingDirectory;
-    static Server server = new Server();
+    static Server server;
+
+    static {
+        try {
+            server = new Server();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static void startup() throws Exception {
         Debugger debugger = new Debugger();

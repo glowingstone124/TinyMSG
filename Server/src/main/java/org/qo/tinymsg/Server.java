@@ -4,8 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.qo.tinymsg.Plugins.PluginLoader;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -17,9 +15,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@SpringBootApplication
 public class Server {
-    private final ExecutorService executorService;
+    public final ExecutorService executorService;
     public static boolean AllowPlugin;
     public static final String CONFIG_FILE = "config_server.json";
     public static final String USER_PROFILE = "users.json";
@@ -40,17 +37,22 @@ public class Server {
     public static int OnlineCount = 0;
     public boolean AllowRegister;
     public boolean noUpdate;
-    public static int innerVersion = 18;
+    public static int innerVersion = 19;
     public static void main(String[] args) throws Exception {
         Server server = new Server();
         server.start();
     }
-    public Server() {
+    public Server() throws Exceptions.IllegalConfigurationException {
         loadConfig();
+        if (maxThread < 0 || Objects.equals(maxThread, null)){
+            maxThread = 10;
+            throw new Exceptions.IllegalConfigurationException("ThreadPool Size misconfigured!");
+
+        }
         onlineApi = new ArrayList<>();
         clients = new ArrayList<>();
         onlineUsers = new ArrayList<>();
-        ServerVersion = "Release 1.5";
+        ServerVersion = "Release 1.6";
         executorService = Executors.newFixedThreadPool(maxThread);
     }
 
@@ -110,10 +112,10 @@ public class Server {
             jsonConfig.put("noUpdate", false);
             jsonConfig.put("Max-user", 10);
             jsonConfig.put("autoexecute", true);
-
+            jsonConfig.put("AllowRegister", false);
             writeFile(CONFIG_FILE, jsonConfig.toString());
             JSONObject plugincfg = new JSONObject();
-            jsonConfig.put("EnablePlugin", false);
+            plugincfg.put("EnablePlugin", false);
             writeFile(PLUGIN_PROFILE, plugincfg.toString());
         } catch (JSONException e) {
             e.printStackTrace();
@@ -187,11 +189,6 @@ public class Server {
             }
         });
         try {
-            ApiControler.start();
-
-            if (ApiControler.Enable == true) {
-                SpringApplication.run(ApiApplication.class);
-            }
             Logger.startup();
             // Create ServerSocket object and bind it to the listening port
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -491,19 +488,19 @@ public class Server {
                 if (userProfiles.has(username)) {
                     JSONObject userProfile = userProfiles.getJSONObject(username);
                     int userPermissionLevel = userProfile.getInt("permission");
-                    if (userPermissionLevel == 1) {
-                        String userPermissionReturn = "admin";
-                        return String.valueOf(userPermissionReturn);
-                    }
-                    if (userPermissionLevel == 0) {
-                        String userPermissionReturn = "user";
-                        return String.valueOf(userPermissionReturn);
-                    }
-                    if (userPermissionLevel == 2) {
-                        String userPermissionReturn = "System";
-                        return String.valueOf(userPermissionReturn);
-                    } else {
-                        broadcastMessage("[ERROR] Illegal Argument: Permission in user:" + username);
+                    switch (userPermissionLevel){
+                        case 1:
+                            String userPermissionReturn = "admin";
+                            return String.valueOf(userPermissionReturn);
+                        case 2:
+                            userPermissionReturn = "System";
+                            return String.valueOf(userPermissionReturn);
+                        case 0:
+                            userPermissionReturn = "user";
+                            return String.valueOf(userPermissionReturn);
+                        default:
+                            broadcastMessage("[ERROR] Illegal Argument: Permission in user:" + username);
+                            break;
                     }
                 }
             }

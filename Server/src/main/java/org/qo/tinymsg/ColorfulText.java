@@ -1,3 +1,4 @@
+
 package org.qo.tinymsg;
 
 public class ColorfulText {
