@@ -1,10 +1,11 @@
 # TINYMSG BY glowingstone124
 ## Release 1.6
+
+使用此api则证明您已阅读并且同意https://next.glowingstone.cn/article/license.md
+
 Download Executable Files in Releases.
 
 Now I use github pages to store Sources, Update Checkers, etc...
-
-For some reason, please download latest source code at ``tmsg.glowingstone.cn/rawcode/latest.zip``
 
 edit your Source to ``http://tmsg.nextage.top/source.json`` plz
 
